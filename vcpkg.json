@@ -1,0 +1,5 @@
+{
+  "name": "drogon-git-blog",
+  "version-string": "1.0.0",
+  "dependencies": ["drogon"]
+}

@@ -1,0 +1,14 @@
+.git
+.github
+build
+out
+uploads
+*.log
+*.user
+.vs
+vendor/md4c/.github
+vendor/md4c/md2html
+vendor/md4c/scripts
+vendor/md4c/test
+vendor/md4c/CHANGELOG.md
+vendor/md4c/README.md

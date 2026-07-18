@@ -1,0 +1,39 @@
+{
+  "listeners": [
+    { "address": "0.0.0.0", "port": 8080, "https": false }
+  ],
+  "app": {
+    "number_of_threads": 0,
+    "enable_session": false,
+    "document_root": "./public",
+    "upload_path": "/tmp/drogon-blog-uploads",
+    "file_types": ["css", "js", "svg", "png", "jpg", "jpeg", "webp", "ico", "woff2"],
+    "use_implicit_page": false,
+    "use_gzip": true,
+    "use_brotli": false,
+    "static_files_cache_time": 3600,
+    "client_max_body_size": "256K",
+    "client_max_memory_body_size": "256K",
+    "log": { "log_level": "INFO", "display_local_time": true }
+  },
+  "custom_config": {
+    "content_path": "./content/posts",
+    "site": {
+      "name": "向量笔记",
+      "description": "用 C++ 记录系统、网络与工程实践",
+      "url": "http://localhost:8080",
+      "author": "本地作者",
+      "github": {
+        "repository_url": "https://github.com/ljcjclljc/Waiting",
+        "branch": "main"
+      },
+      "giscus": {
+        "enabled": true,
+        "repo": "ljcjclljc/Waiting",
+        "repo_id": "R_kgDOTca6Yg",
+        "category": "Waiting",
+        "category_id": "DIC_kwDOTca6Ys4DBens"
+      }
+    }
+  }
+}
