@@ -1,0 +1,54 @@
+<%inc #include "services/Html.h"
+#include "services/View.h" %>
+<%c++
+const auto site = @@.get<Json::Value>("site");
+const auto post = @@.get<Json::Value>("post");
+const auto description = post.get("seoDescription", "").asString().empty() ? post["excerpt"].asString() : post["seoDescription"].asString();
+const auto sourceUrl = blog::view::sourceUrl(site, post);
+const auto giscus = site["giscus"];
+const bool giscusReady = giscus.get("enabled", false).asBool() &&
+                         !giscus.get("repo", "").asString().empty() &&
+                         !giscus.get("repo_id", "").asString().empty() &&
+                         !giscus.get("category", "").asString().empty() &&
+                         !giscus.get("category_id", "").asString().empty();
+$$ << blog::view::pageHeader(site, post["title"].asString(), description);
+%>
+<main id="main">
+  <article class="article-shell">
+    <header class="article-header">
+      <div class="post-meta"><a href="/categories/<%c++ $$ << blog::html::attr(post["categorySlug"]); %>"><%c++ $$ << blog::html::text(post["categoryName"]); %></a><span><%c++ $$ << blog::html::text(post["publishedAt"]); %></span><span>更新于 <%c++ $$ << blog::html::text(post["updatedAt"]); %></span><span><%c++ $$ << post["readingMinutes"].asInt64(); %> 分钟阅读</span></div>
+      <h1><%c++ $$ << blog::html::text(post["title"]); %></h1>
+      <p class="article-deck"><%c++ $$ << blog::html::text(post["excerpt"]); %></p>
+      <div class="article-actions">
+        <div class="article-tags"><%c++ for (const auto &tag : post["tags"]) { $$ << blog::view::tagLink(tag); } %></div>
+        <%c++ if (!sourceUrl.empty()) { %><a class="source-link" href="<%c++ $$ << blog::html::escape(sourceUrl); %>" target="_blank" rel="noopener noreferrer">在 GitHub 查看原文</a><%c++ } %>
+      </div>
+    </header>
+    <div class="article-rule"></div>
+    <div class="prose"><%c++ $$ << post["contentHtml"].asString(); %></div>
+  </article>
+
+  <section class="comments-section shell-narrow" aria-labelledby="comments-title">
+    <div class="section-heading"><div><h2 id="comments-title">评论</h2><p>评论由 GitHub Discussions 托管。</p></div></div>
+    <%c++ if (giscusReady) { %>
+    <script src="https://giscus.app/client.js"
+            data-repo="<%c++ $$ << blog::html::escape(giscus["repo"].asString()); %>"
+            data-repo-id="<%c++ $$ << blog::html::escape(giscus["repo_id"].asString()); %>"
+            data-category="<%c++ $$ << blog::html::escape(giscus["category"].asString()); %>"
+            data-category-id="<%c++ $$ << blog::html::escape(giscus["category_id"].asString()); %>"
+            data-mapping="pathname"
+            data-strict="1"
+            data-reactions-enabled="1"
+            data-emit-metadata="0"
+            data-input-position="top"
+            data-theme="preferred_color_scheme"
+            data-lang="zh-CN"
+            data-loading="lazy"
+            crossorigin="anonymous"
+            async></script>
+    <%c++ } else { %>
+    <div class="comment-notice"><p>评论将在 GitHub 仓库绑定完成后开放。</p></div>
+    <%c++ } %>
+  </section>
+</main>
+<%c++ $$ << blog::view::pageFooter(site); %>

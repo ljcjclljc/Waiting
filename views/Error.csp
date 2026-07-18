@@ -1,0 +1,9 @@
+<%inc #include "services/SiteConfig.h"
+#include "services/View.h" %>
+<%c++
+const auto site = blog::siteConfig();
+const auto message = @@.get<std::string>("message");
+$$ << blog::view::pageHeader(site, "出现问题", message);
+%>
+<main id="main" class="error-page shell"><div class="error-code">/ /</div><h1>页面暂时不可用</h1><p>[[ message ]]</p><a class="button button--primary" href="/">返回首页</a></main>
+<%c++ $$ << blog::view::pageFooter(site); %>

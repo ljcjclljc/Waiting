@@ -1,0 +1,62 @@
+<%inc #include "services/Html.h"
+#include "services/View.h" %>
+<%c++
+const auto site = @@.get<Json::Value>("site");
+const auto posts = @@.get<Json::Value>("posts");
+const auto categories = @@.get<Json::Value>("categories");
+const auto tags = @@.get<Json::Value>("tags");
+const auto &items = posts["items"];
+$$ << blog::view::pageHeader(site, "", site.get("description", "").asString());
+%>
+<main id="main">
+  <section class="home-intro shell">
+    <div class="intro-copy">
+      <h1>向量笔记</h1>
+      <p>用 C++ 记录系统、网络与工程实践。文章从本地 Markdown 出发，经 GitHub 提交后发布。</p>
+      <div class="intro-actions">
+        <a class="button button--primary" href="/posts">浏览全部文章</a>
+        <a class="button button--quiet" href="#latest">查看最新内容</a>
+      </div>
+    </div>
+    <div class="intro-visual" aria-hidden="true">
+      <img src="/images/drogon.jpg" alt="" width="1200" height="600">
+      <div class="visual-caption">Drogon · Markdown · GitHub</div>
+    </div>
+  </section>
+
+  <%c++ if (!items.empty()) { const auto &featured = items[0]; %>
+  <section class="featured-band">
+    <div class="shell featured-layout">
+      <div class="section-index">01 / 精选</div>
+      <article class="featured-copy">
+        <div class="post-meta"><span><%c++ $$ << blog::html::text(featured["categoryName"]); %></span><span><%c++ $$ << blog::html::text(featured["publishedAt"]); %></span></div>
+        <h2><a href="/posts/<%c++ $$ << blog::html::attr(featured["slug"]); %>"><%c++ $$ << blog::html::text(featured["title"]); %></a></h2>
+        <p><%c++ $$ << blog::html::text(featured["excerpt"]); %></p>
+        <a class="text-link text-link--light" href="/posts/<%c++ $$ << blog::html::attr(featured["slug"]); %>">阅读全文 <span aria-hidden="true">→</span></a>
+      </article>
+    </div>
+  </section>
+  <%c++ } %>
+
+  <section id="latest" class="content-section shell">
+    <div class="section-heading"><div><h2>最近更新</h2><p>围绕构建、调试与运行中的真实问题。</p></div><a class="text-link" href="/posts">全部文章 →</a></div>
+    <div class="post-list">
+      <%c++ for (Json::ArrayIndex i = items.empty() ? 0 : 1; i < items.size(); ++i) { $$ << blog::view::postCard(items[i], true); } %>
+    </div>
+  </section>
+
+  <section id="topics" class="topics-band">
+    <div class="shell topics-layout">
+      <div class="topics-copy"><h2>主题索引</h2><p>从稳定主题进入，而不是在时间线里反复寻找。</p></div>
+      <div class="topic-list">
+        <%c++ for (const auto &category : categories) { %>
+        <%c++ $$ << blog::view::categoryLink(category); %>
+        <%c++ } %>
+      </div>
+      <div class="tag-cloud" aria-label="标签">
+        <%c++ for (const auto &tag : tags) { $$ << blog::view::tagLink(tag); } %>
+      </div>
+    </div>
+  </section>
+</main>
+<%c++ $$ << blog::view::pageFooter(site); %>
