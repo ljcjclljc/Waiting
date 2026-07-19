@@ -15,11 +15,18 @@ int main(int argc, char *argv[])
     }
 
     drogon::app().loadConfigFile(configPath);
+    {
+        drogon::HttpViewData data;
+        data.insert("message", std::string("你访问的页面不存在，可能已被移动或删除。"));
+        auto response = drogon::HttpResponse::newHttpViewResponse("Error", data);
+        drogon::app().setCustom404Page(response);
+    }
     drogon::app().registerPreSendingAdvice(
         [](const drogon::HttpRequestPtr &,
            const drogon::HttpResponsePtr &response) {
             response->addHeader("X-Content-Type-Options", "nosniff");
             response->addHeader("X-Frame-Options", "DENY");
+            response->addHeader("Cross-Origin-Resource-Policy", "same-origin");
             response->addHeader("Referrer-Policy", "strict-origin-when-cross-origin");
             response->addHeader(
                 "Permissions-Policy",
@@ -29,6 +36,7 @@ int main(int argc, char *argv[])
                 "default-src 'self'; img-src 'self' data: https:; "
                 "style-src 'self' https://giscus.app; "
                 "script-src 'self' https://giscus.app; "
+                "media-src 'self'; "
                 "connect-src 'self' https://giscus.app https://api.github.com; "
                 "frame-src https://giscus.app; base-uri 'self'; "
                 "form-action 'self'; frame-ancestors 'none'");

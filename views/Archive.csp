@@ -1,0 +1,41 @@
+<%inc #include "services/Html.h"
+#include "services/View.h" %>
+<%c++
+const auto site = @@.get<Json::Value>("site");
+const auto archives = @@.get<Json::Value>("archives");
+const auto total = @@.get<Json::Int64>("total");
+blog::view::PageMeta meta;
+meta.title = "文章归档";
+meta.description = "按年份浏览晨's Blog 的全部文章";
+meta.path = "/archives";
+$$ << blog::view::pageHeader(site, meta);
+%>
+<main id="main" class="page-main">
+  <header class="archive-hero archive-hero--timeline">
+    <div class="shell archive-heading" data-reveal>
+      <span class="section-number">ARCHIVE / <%c++ $$ << total; %> ENTRIES</span>
+      <h1>文章归档</h1>
+      <p>沿时间回看每一次构建、推导与修正。</p>
+    </div>
+  </header>
+  <div class="shell timeline-archive">
+    <%c++ if (archives.empty()) { %>
+    <div class="empty-state"><h2>还没有文章</h2><p>第一篇 Markdown 提交后会出现在这里。</p></div>
+    <%c++ } %>
+    <%c++ for (const auto &group : archives) { %>
+    <section class="timeline-year" aria-labelledby="year-<%c++ $$ << blog::html::attr(group["year"]); %>">
+      <h2 id="year-<%c++ $$ << blog::html::attr(group["year"]); %>"><%c++ $$ << blog::html::text(group["year"]); %></h2>
+      <div class="timeline-entries">
+        <%c++ for (const auto &post : group["posts"]) { %>
+        <article class="timeline-entry" data-reveal>
+          <time datetime="<%c++ $$ << blog::html::attr(post["publishedAt"]); %>"><%c++ $$ << blog::html::text(post["publishedAt"]); %></time>
+          <div><h3><a href="/posts/<%c++ $$ << blog::html::attr(post["slug"]); %>"><%c++ $$ << blog::html::text(post["title"]); %></a></h3><p><%c++ $$ << blog::html::text(post["excerpt"]); %></p></div>
+          <a class="timeline-arrow" href="/posts/<%c++ $$ << blog::html::attr(post["slug"]); %>" aria-label="阅读文章：<%c++ $$ << blog::html::attr(post["title"]); %>"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-5-5 5 5-5 5"/></svg></a>
+        </article>
+        <%c++ } %>
+      </div>
+    </section>
+    <%c++ } %>
+  </div>
+</main>
+<%c++ $$ << blog::view::pageFooter(site); %>

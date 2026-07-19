@@ -7,7 +7,7 @@
     "enable_session": false,
     "document_root": "./public",
     "upload_path": "/tmp/drogon-blog-uploads",
-    "file_types": ["css", "js", "svg", "png", "jpg", "jpeg", "webp", "ico", "woff2"],
+    "file_types": ["css", "js", "svg", "png", "jpg", "jpeg", "webp", "mp4", "webm", "ico", "woff2"],
     "use_implicit_page": false,
     "use_gzip": true,
     "use_brotli": false,
@@ -19,10 +19,10 @@
   "custom_config": {
     "content_path": "./content/posts",
     "site": {
-      "name": "向量笔记",
+      "name": "晨's Blog",
       "description": "用 C++ 记录系统、网络与工程实践",
       "url": "http://localhost:8080",
-      "author": "本地作者",
+      "author": "晨",
       "github": {
         "repository_url": "https://github.com/ljcjclljc/Waiting",
         "branch": "main"

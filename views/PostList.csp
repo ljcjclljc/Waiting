@@ -5,29 +5,47 @@ const auto site = @@.get<Json::Value>("site");
 const auto posts = @@.get<Json::Value>("posts");
 const auto categories = @@.get<Json::Value>("categories");
 const auto title = @@.get<std::string>("title");
+const auto canonicalPath = @@.get<std::string>("canonicalPath");
 std::string query;
 try { query = @@.get<std::string>("query"); } catch (...) {}
-$$ << blog::view::pageHeader(site, title, "浏览、筛选和搜索博客文章");
+const auto pageHref = query.empty() ? std::string("?page=") :
+    std::string("?q=") + blog::html::urlEncode(query) + "&page=";
+blog::view::PageMeta meta;
+meta.title = title;
+meta.description = "浏览、筛选和搜索博客文章";
+meta.path = canonicalPath;
+if (posts["page"].asInt() > 1)
+    meta.path += "?page=" + std::to_string(posts["page"].asInt());
+meta.index = canonicalPath != "/search";
+$$ << blog::view::pageHeader(site, meta);
 %>
-<main id="main" class="shell page-main">
-  <header class="page-heading">
-    <div><h1><%c++ $$ << blog::html::escape(title); %></h1><p>共 <%c++ $$ << posts["total"].asInt64(); %> 篇已发布内容</p></div>
+<main id="main" class="page-main">
+  <header class="archive-hero">
+    <div class="shell archive-heading" data-reveal>
+      <span class="section-number">INDEX / <%c++ $$ << posts["total"].asInt64(); %> ENTRIES</span>
+      <h1><%c++ $$ << blog::html::escape(title); %></h1>
+      <p>检索每一次推导、实验和工程决策。</p>
+    </div>
+  </header>
+  <div class="shell archive-tools">
     <form class="search-form" action="/search" method="get" role="search">
       <label class="sr-only" for="q">搜索文章</label>
       <input id="q" name="q" value="<%c++ $$ << blog::html::escape(query); %>" maxlength="80" placeholder="搜索标题、摘要或正文">
-      <button class="button button--primary" type="submit">搜索</button>
+      <button class="search-submit" type="submit" aria-label="搜索"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path d="m16 16 4 4"/></svg></button>
     </form>
-  </header>
-  <div class="filter-rail" aria-label="分类筛选"><a href="/posts">全部</a><%c++ for (const auto &category : categories) { %><a href="/categories/<%c++ $$ << blog::html::attr(category["slug"]); %>"><%c++ $$ << blog::html::text(category["name"]); %></a><%c++ } %></div>
+    <div class="filter-rail" aria-label="分类筛选"><a href="/posts">全部</a><%c++ for (const auto &category : categories) { %><a href="/categories/<%c++ $$ << blog::html::attr(category["slug"]); %>"><%c++ $$ << blog::html::text(category["name"]); %></a><%c++ } %></div>
+  </div>
+  <div class="shell archive-content">
   <%c++ if (posts["items"].empty()) { %>
   <div class="empty-state"><h2>没有找到文章</h2><p>尝试缩短关键词，或返回全部文章。</p><a class="button button--quiet" href="/posts">清除筛选</a></div>
   <%c++ } else { %>
   <div class="post-grid"><%c++ for (const auto &post : posts["items"]) { $$ << blog::view::postCard(post); } %></div>
   <%c++ } %>
   <nav class="pagination" aria-label="分页">
-    <%c++ const int page=posts["page"].asInt(); const int pages=posts["pages"].asInt(); if(page>1){ %><a class="button button--quiet" href="?page=<%c++ $$ << page-1; %>">上一页</a><%c++ } %>
+    <%c++ const int page=posts["page"].asInt(); const int pages=posts["pages"].asInt(); if(page>1){ %><a class="button button--quiet" href="<%c++ $$ << blog::html::escape(pageHref); %><%c++ $$ << page-1; %>">上一页</a><%c++ } %>
     <span>第 <%c++ $$ << page; %> / <%c++ $$ << (pages > 0 ? pages : 1); %> 页</span>
-    <%c++ if(page<pages){ %><a class="button button--quiet" href="?page=<%c++ $$ << page+1; %>">下一页</a><%c++ } %>
+    <%c++ if(page<pages){ %><a class="button button--quiet" href="<%c++ $$ << blog::html::escape(pageHref); %><%c++ $$ << page+1; %>">下一页</a><%c++ } %>
   </nav>
+  </div>
 </main>
 <%c++ $$ << blog::view::pageFooter(site); %>

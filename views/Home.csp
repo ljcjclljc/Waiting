@@ -6,56 +6,76 @@ const auto posts = @@.get<Json::Value>("posts");
 const auto categories = @@.get<Json::Value>("categories");
 const auto tags = @@.get<Json::Value>("tags");
 const auto &items = posts["items"];
-$$ << blog::view::pageHeader(site, "", site.get("description", "").asString());
+const auto repositoryUrl = site["github"].get("repository_url", "").asString();
+blog::view::PageMeta meta;
+meta.description = site.get("description", "").asString();
+meta.path = "/";
+meta.home = true;
+$$ << blog::view::pageHeader(site, meta);
 %>
 <main id="main">
-  <section class="home-intro shell">
-    <div class="intro-copy">
-      <h1>向量笔记</h1>
-      <p>用 C++ 记录系统、网络与工程实践。文章从本地 Markdown 出发，经 GitHub 提交后发布。</p>
-      <div class="intro-actions">
-        <a class="button button--primary" href="/posts">浏览全部文章</a>
-        <a class="button button--quiet" href="#latest">查看最新内容</a>
+  <section class="hero" aria-labelledby="hero-title">
+    <div class="shell hero-inner">
+      <div class="hero-copy" data-reveal>
+        <h1 id="hero-title"><span>欢迎来到</span>晨's Blog</h1>
+        <p class="hero-lead">在雨声里记录 C++、网络与系统工程。</p>
+        <div class="hero-actions">
+          <a class="button button--signal" href="/posts">阅读文章 <span aria-hidden="true">↗</span></a>
+          <%c++ if (!repositoryUrl.empty()) { %><a class="button hero-repo" href="<%c++ $$ << blog::html::escape(repositoryUrl); %>" target="_blank" rel="noopener noreferrer">GitHub 源码 <span aria-hidden="true">↗</span></a><%c++ } %>
+        </div>
       </div>
-    </div>
-    <div class="intro-visual" aria-hidden="true">
-      <img src="/images/drogon.jpg" alt="" width="1200" height="600">
-      <div class="visual-caption">Drogon · Markdown · GitHub</div>
+      <a class="scroll-cue" href="#featured" aria-label="继续阅读">
+        <span>继续阅读</span><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3v13m-5-5 5 5 5-5"/></svg>
+      </a>
     </div>
   </section>
 
   <%c++ if (!items.empty()) { const auto &featured = items[0]; %>
-  <section class="featured-band">
+  <section id="featured" class="featured-band">
     <div class="shell featured-layout">
-      <div class="section-index">01 / 精选</div>
-      <article class="featured-copy">
-        <div class="post-meta"><span><%c++ $$ << blog::html::text(featured["categoryName"]); %></span><span><%c++ $$ << blog::html::text(featured["publishedAt"]); %></span></div>
+      <div class="section-label" data-reveal><span>01</span><p>FEATURED<br>DISPATCH</p></div>
+      <article class="featured-copy" data-reveal>
+        <div class="post-meta"><a href="/categories/<%c++ $$ << blog::html::attr(featured["categorySlug"]); %>"><%c++ $$ << blog::html::text(featured["categoryName"]); %></a><span><%c++ $$ << blog::html::text(featured["publishedAt"]); %></span><span><%c++ $$ << featured["readingMinutes"].asInt64(); %> 分钟</span></div>
         <h2><a href="/posts/<%c++ $$ << blog::html::attr(featured["slug"]); %>"><%c++ $$ << blog::html::text(featured["title"]); %></a></h2>
         <p><%c++ $$ << blog::html::text(featured["excerpt"]); %></p>
-        <a class="text-link text-link--light" href="/posts/<%c++ $$ << blog::html::attr(featured["slug"]); %>">阅读全文 <span aria-hidden="true">→</span></a>
+        <a class="text-link text-link--inverse" href="/posts/<%c++ $$ << blog::html::attr(featured["slug"]); %>">打开这篇记录 <span aria-hidden="true">↗</span></a>
       </article>
+      <div class="featured-visual" aria-hidden="true" data-reveal>
+        <span>V</span>
+        <div><small>FEATURED NOTE</small><b>CHEN / 001</b><p>DROGON · MARKDOWN · GIT</p></div>
+      </div>
     </div>
   </section>
   <%c++ } %>
 
-  <section id="latest" class="content-section shell">
-    <div class="section-heading"><div><h2>最近更新</h2><p>围绕构建、调试与运行中的真实问题。</p></div><a class="text-link" href="/posts">全部文章 →</a></div>
-    <div class="post-list">
-      <%c++ for (Json::ArrayIndex i = items.empty() ? 0 : 1; i < items.size(); ++i) { $$ << blog::view::postCard(items[i], true); } %>
+  <section id="latest" class="content-section">
+    <div class="shell">
+      <div class="section-heading" data-reveal><div><span class="section-number">02 / LOG</span><h2>最近提交</h2><p>按时间展开的构建、调试与运行记录。</p></div><a class="text-link" href="/posts">查看全部 <span aria-hidden="true">↗</span></a></div>
+      <div class="post-list">
+        <%c++ for (Json::ArrayIndex i = items.empty() ? 0 : 1; i < items.size(); ++i) { $$ << blog::view::postCard(items[i], true); } %>
+      </div>
     </div>
   </section>
 
   <section id="topics" class="topics-band">
     <div class="shell topics-layout">
-      <div class="topics-copy"><h2>主题索引</h2><p>从稳定主题进入，而不是在时间线里反复寻找。</p></div>
-      <div class="topic-list">
+      <div class="topics-copy" data-reveal><span class="section-number">03 / INDEX</span><h2>沿主题进入</h2><p>文章不是孤立的碎片。选择一个方向，沿着相邻的问题继续阅读。</p></div>
+      <div class="topic-list" data-reveal>
         <%c++ for (const auto &category : categories) { %>
         <%c++ $$ << blog::view::categoryLink(category); %>
         <%c++ } %>
       </div>
-      <div class="tag-cloud" aria-label="标签">
+      <div class="tag-cloud" aria-label="标签" data-reveal>
         <%c++ for (const auto &tag : tags) { $$ << blog::view::tagLink(tag); } %>
       </div>
+    </div>
+  </section>
+
+  <section class="publish-band">
+    <div class="shell publish-layout" data-reveal>
+      <div><span class="section-number">04 / SOURCE</span><h2>发布始于一次提交</h2></div>
+      <p>这里没有后台编辑器。文章只来自仓库中的 Markdown 文件，经过 Git 历史审阅后由 Drogon 动态渲染。</p>
+      <%c++ if (!repositoryUrl.empty()) { %><a class="button button--outline" href="<%c++ $$ << blog::html::escape(repositoryUrl); %>" target="_blank" rel="noopener noreferrer">查看仓库 <span aria-hidden="true">↗</span></a><%c++ } %>
     </div>
   </section>
 </main>

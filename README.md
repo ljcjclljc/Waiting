@@ -1,4 +1,4 @@
-# 向量笔记：Drogon + GitHub 博客
+# 晨's Blog：Drogon + GitHub 博客
 
 这是一个采用 Hexo 式发布模型的 Drogon 博客：文章只存在于本地 Markdown 文件中，提交并推送到 GitHub 后由 Actions 构建容器；访客不能修改文章，只能通过 Giscus 在 GitHub Discussions 评论。
 
@@ -9,11 +9,13 @@ content/posts/*.md -> git push -> GitHub Actions -> GHCR 容器
                               \-> GitHub Discussions / Giscus 评论
 ```
 
-- Drogon：路由、服务端渲染、搜索、分类、标签、RSS 和站点地图。
+- Drogon：路由、服务端渲染、搜索、分类、标签、归档、RSS 和站点地图。
 - Markdown：文章唯一数据源，使用严格 JSON Front Matter。
 - GitHub：代码与内容版本、构建触发、容器发布和评论数据。
 - PostgreSQL：不再是博客运行依赖。
 - 管理后台：不存在，也没有文章写入 API。
+
+阅读端还提供文章目录、阅读进度、代码复制、上一篇/下一篇、相关文章、深浅主题、SEO 元数据和自定义 404。设计取舍与同类项目对比见 [`docs/BLOG_PROJECT_COMPARISON.md`](docs/BLOG_PROJECT_COMPARISON.md)。
 
 ## 本地构建
 
