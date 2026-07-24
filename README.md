@@ -1,6 +1,8 @@
 # 晨's Blog：Drogon + GitHub 博客
 
-这是一个采用 Hexo 式发布模型的 Drogon 博客：文章只存在于本地 Markdown 文件中，提交并推送到 GitHub 后由 Actions 构建容器；访客不能修改文章，只能通过 Giscus 在 GitHub Discussions 评论。
+> 在代码与晨光之间，记录 C++、网络与系统世界的思考。
+
+晨's Blog 是一个采用 Hexo 式发布模型的 Drogon 动态博客。文章以本地 Markdown 文件为唯一内容源，提交并推送到 GitHub 后由 Actions 验证并构建容器。网站不提供文章管理后台，访客只能阅读内容，并通过 Giscus 在 GitHub Discussions 中评论。
 
 ## 架构
 

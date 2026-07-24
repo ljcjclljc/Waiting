@@ -18,7 +18,7 @@ $$ << blog::view::pageHeader(site, meta);
     <div class="shell hero-inner">
       <div class="hero-copy" data-reveal>
         <h1 id="hero-title"><span>欢迎来到</span>晨's Blog</h1>
-        <p class="hero-lead">在雨声里记录 C++、网络与系统工程。</p>
+        <p class="hero-lead">在代码与晨光之间，记录 C++、网络与系统世界的思考。</p>
         <div class="hero-actions">
           <a class="button button--signal" href="/posts">阅读文章 <span aria-hidden="true">↗</span></a>
           <%c++ if (!repositoryUrl.empty()) { %><a class="button hero-repo" href="<%c++ $$ << blog::html::escape(repositoryUrl); %>" target="_blank" rel="noopener noreferrer">GitHub 源码 <span aria-hidden="true">↗</span></a><%c++ } %>
