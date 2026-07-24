@@ -1996,7 +1996,12 @@ body[data-page="home"] .site-footer {
   }
 
   .hero-lead {
+    max-width: 100%;
+    padding-inline: 8px;
     font-size: 16px;
+    overflow-wrap: anywhere;
+    text-wrap: balance;
+    white-space: normal;
   }
 
   .hero-actions {

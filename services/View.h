@@ -75,8 +75,8 @@ inline std::string pageHeader(const Json::Value &site,
     output
            << "<link rel=\"alternate\" type=\"application/rss+xml\" title=\"RSS\" href=\"/feed.xml\">"
            << "<link rel=\"icon\" href=\"/images/avatar-rossi.jpg\" type=\"image/jpeg\">"
-           << "<link rel=\"stylesheet\" href=\"/css/app.css?v=20260720-1\">"
-           << "<script src=\"/js/app.js?v=20260720-1\" defer></script></head>"
+           << "<link rel=\"stylesheet\" href=\"/css/app.css?v=20260725-1\">"
+           << "<script src=\"/js/app.js?v=20260725-1\" defer></script></head>"
            << "<body data-surface=\"site\" data-page=\"" << (meta.home ? "home" : "inner") << "\">";
     if (meta.home)
         output << "<div class=\"site-background\" aria-hidden=\"true\"><video autoplay muted loop playsinline preload=\"auto\" poster=\"/images/kayoko-rain.jpg\" tabindex=\"-1\"><source src=\"/media/kayoko-rain.mp4\" type=\"video/mp4\"></video><div class=\"site-background-shade\"></div></div>";
