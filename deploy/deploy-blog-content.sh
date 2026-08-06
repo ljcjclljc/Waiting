@@ -52,11 +52,24 @@ for attempt in 1 2 3; do
     printf 'Fetch attempt %d failed; retrying...\n' "${attempt}" >&2
     sleep $((attempt * 3))
 done
-[[ "${fetched}" == true ]] || die "could not fetch ${COMMIT_SHA}"
-main_sha="$(git --git-dir="${REPOSITORY_DIRECTORY}" \
-    rev-parse refs/heads/deploy-main)"
-[[ "${COMMIT_SHA}" == "${main_sha}" ]] ||
-    die "${COMMIT_SHA} is not the current main commit (${main_sha})"
+if [[ "${fetched}" == true ]]; then
+    main_sha="$(git --git-dir="${REPOSITORY_DIRECTORY}" \
+        rev-parse refs/heads/deploy-main)"
+    [[ "${COMMIT_SHA}" == "${main_sha}" ]] ||
+        die "${COMMIT_SHA} is not the current main commit (${main_sha})"
+else
+    printf 'GitHub fetch failed; checking local deployment repository.\n' >&2
+    local_sha="$(git --git-dir="${REPOSITORY_DIRECTORY}" \
+        rev-parse --verify -q "${COMMIT_SHA}^{commit}" || true)"
+    if [[ -z "${local_sha}" || "${local_sha}" != "${COMMIT_SHA}" ]]; then
+        die "could not fetch ${COMMIT_SHA} from GitHub or local repository"
+    fi
+    local_main="$(git --git-dir="${REPOSITORY_DIRECTORY}" \
+        rev-parse --verify -q refs/remotes/origin/main || true)"
+    if [[ -n "${local_main}" && "${local_main}" != "${COMMIT_SHA}" ]]; then
+        printf 'Warning: requested commit is not the latest known main commit; deploying requested SHA.\n' >&2
+    fi
+fi
 
 readonly STAGE_DIRECTORY="$(mktemp -d "${CONTENT_DIRECTORY}/.deploy-stage.XXXXXX")"
 readonly BACKUP_DIRECTORY="$(mktemp -d "${STATE_DIRECTORY}/backup.XXXXXX")"
