@@ -1,6 +1,7 @@
 add_executable(blog_tests
     BlogCoreTest.cc
     ../repositories/ContentRepository.cc
+    ../repositories/ContentStore.cc
     ../services/MarkdownService.cc
 )
 

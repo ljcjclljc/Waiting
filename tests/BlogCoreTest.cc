@@ -2,6 +2,7 @@
 #include <drogon/drogon_test.h>
 
 #include "repositories/ContentRepository.h"
+#include "repositories/ContentStore.h"
 #include "services/MarkdownService.h"
 
 #include <chrono>
@@ -139,6 +140,62 @@ DROGON_TEST(ContentRepositoryBuildsArchiveAndReadingLinks)
     CHECK(related[0]["slug"].asString() == "middle");
     CHECK(repository.categoryName("cpp") == "C++");
     CHECK(repository.tagName("drogon") == "Drogon");
+
+    std::filesystem::remove_all(directory);
+}
+
+DROGON_TEST(ContentStoreReloadsValidSnapshotsAndKeepsTheLastGoodVersion)
+{
+    const auto suffix = std::chrono::steady_clock::now().time_since_epoch().count();
+    const auto directory = std::filesystem::temp_directory_path() /
+                           ("drogon-blog-hot-reload-" + std::to_string(suffix));
+    const auto postsDirectory = directory / "posts";
+    std::filesystem::create_directories(postsDirectory);
+
+    const auto writePost = [&postsDirectory](const std::string &title) {
+        std::ofstream output(postsDirectory / "hot-reload.md", std::ios::binary);
+        output << "---\n{\n"
+               << "  \"title\": \"" << title << "\",\n"
+               << "  \"slug\": \"hot-reload\",\n"
+               << "  \"date\": \"2026-01-01\",\n"
+               << "  \"excerpt\": \"Hot reload test\",\n"
+               << "  \"category\": { \"name\": \"C++\", \"slug\": \"cpp\" },\n"
+               << "  \"tags\": [{ \"name\": \"Drogon\", \"slug\": \"drogon\" }],\n"
+               << "  \"draft\": false\n}\n---\n# Content\n";
+    };
+    const auto writeVersion = [&directory](char value) {
+        std::ofstream output(directory / ".content-version", std::ios::binary);
+        output << std::string(40, value) << '\n';
+    };
+
+    writePost("Version One");
+    blog::ContentStore store(postsDirectory);
+    const auto firstSnapshot = store.snapshot();
+    CHECK(firstSnapshot->findPublishedBySlug("hot-reload")["title"].asString() ==
+          "Version One");
+
+    writePost("Version Two");
+    writeVersion('a');
+    CHECK(store.reloadIfChanged());
+    const auto secondSnapshot = store.snapshot();
+    CHECK(firstSnapshot->findPublishedBySlug("hot-reload")["title"].asString() ==
+          "Version One");
+    CHECK(secondSnapshot->findPublishedBySlug("hot-reload")["title"].asString() ==
+          "Version Two");
+    CHECK(store.status().activeVersion == std::string(40, 'a'));
+
+    {
+        std::ofstream output(postsDirectory / "broken.md", std::ios::binary);
+        output << "not valid front matter\n";
+    }
+    writeVersion('b');
+    CHECK(!store.reloadIfChanged());
+    const auto failedStatus = store.status();
+    CHECK(failedStatus.activeVersion == std::string(40, 'a'));
+    CHECK(failedStatus.observedVersion == std::string(40, 'b'));
+    CHECK(!failedStatus.lastError.empty());
+    CHECK(store.snapshot()->findPublishedBySlug("hot-reload")["title"].asString() ==
+          "Version Two");
 
     std::filesystem::remove_all(directory);
 }

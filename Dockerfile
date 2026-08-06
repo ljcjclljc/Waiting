@@ -4,7 +4,8 @@ WORKDIR /src
 COPY . .
 RUN cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DBLOG_BUILD_TESTS=ON \
     && cmake --build build --parallel \
-    && ctest --test-dir build --output-on-failure
+    && ctest --test-dir build --output-on-failure \
+    && ./build/drogon_blog --validate-content ./content/posts
 
 FROM drogonframework/drogon@sha256:6e6855f2fac69c394b574f23cde70e88a23f7453bc8a0be67d4c2e7c5f1e2fca
 WORKDIR /app
