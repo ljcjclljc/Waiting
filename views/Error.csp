@@ -3,7 +3,11 @@
 <%c++
 const auto site = blog::siteConfig();
 const auto message = @@.get<std::string>("message");
-$$ << blog::view::pageHeader(site, "出现问题", message);
+blog::view::PageMeta meta;
+meta.title = "页面未找到";
+meta.description = message;
+meta.path = "/404";
+$$ << blog::view::pageHeader(site, meta);
 %>
-<main id="main" class="error-page shell"><div class="error-code">/ /</div><h1>页面暂时不可用</h1><p>[[ message ]]</p><a class="button button--primary" href="/">返回首页</a></main>
+<main id="main" class="error-page shell"><div class="error-code">404</div><h1>这里没有这一页</h1><p><%c++ $$ << blog::html::text(message); %></p><div class="error-actions"><a class="button button--primary" href="/">返回首页</a><a class="button button--quiet" href="/archives">浏览归档</a></div></main>
 <%c++ $$ << blog::view::pageFooter(site); %>

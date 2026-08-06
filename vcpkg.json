@@ -1,5 +1,6 @@
 {
   "name": "drogon-git-blog",
   "version-string": "1.0.0",
+  "builtin-baseline": "771b848ed99c9f95e5bba3c4fded97bfc9262a5d",
   "dependencies": ["drogon"]
 }

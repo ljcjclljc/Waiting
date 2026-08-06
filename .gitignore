@@ -2,6 +2,7 @@
 /out/
 /config/config.local.json
 /.env
+/.deploy/
 *.log
 *.user
 *.suo

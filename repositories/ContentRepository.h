@@ -19,8 +19,15 @@ class ContentRepository
                               const std::string &categorySlug = {},
                               const std::string &tagSlug = {}) const;
     Json::Value findPublishedBySlug(const std::string &slug) const;
+    Json::Value listAllPublished() const;
+    Json::Value listArchive() const;
+    Json::Value navigationForSlug(const std::string &slug) const;
+    Json::Value relatedPublished(const std::string &slug,
+                                 std::size_t limit = 3) const;
     Json::Value listCategories() const;
     Json::Value listTags() const;
+    std::string categoryName(const std::string &slug) const;
+    std::string tagName(const std::string &slug) const;
     std::size_t size() const noexcept;
 
   private:

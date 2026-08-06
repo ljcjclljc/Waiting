@@ -3,6 +3,8 @@
 <%c++
 const auto site = @@.get<Json::Value>("site");
 const auto post = @@.get<Json::Value>("post");
+const auto navigation = @@.get<Json::Value>("navigation");
+const auto related = @@.get<Json::Value>("related");
 const auto description = post.get("seoDescription", "").asString().empty() ? post["excerpt"].asString() : post["seoDescription"].asString();
 const auto sourceUrl = blog::view::sourceUrl(site, post);
 const auto giscus = site["giscus"];
@@ -11,22 +13,59 @@ const bool giscusReady = giscus.get("enabled", false).asBool() &&
                          !giscus.get("repo_id", "").asString().empty() &&
                          !giscus.get("category", "").asString().empty() &&
                          !giscus.get("category_id", "").asString().empty();
-$$ << blog::view::pageHeader(site, post["title"].asString(), description);
+blog::view::PageMeta meta;
+meta.title = post.get("seoTitle", "").asString().empty() ? post["title"].asString() : post["seoTitle"].asString();
+meta.description = description;
+meta.path = "/posts/" + post["slug"].asString();
+meta.image = post.get("coverUrl", "").asString();
+meta.publishedAt = post["publishedAt"].asString();
+meta.updatedAt = post["updatedAt"].asString();
+meta.article = true;
+$$ << blog::view::pageHeader(site, meta);
 %>
 <main id="main">
-  <article class="article-shell">
-    <header class="article-header">
+  <div class="reading-progress" aria-hidden="true"><span></span></div>
+  <article class="article-shell" itemscope itemtype="https://schema.org/BlogPosting">
+    <meta itemprop="mainEntityOfPage" content="<%c++ $$ << blog::html::attr(blog::view::absoluteUrl(site.get("url", "").asString(), meta.path)); %>">
+    <meta itemprop="datePublished" content="<%c++ $$ << blog::html::attr(post["publishedAt"]); %>">
+    <meta itemprop="dateModified" content="<%c++ $$ << blog::html::attr(post["updatedAt"]); %>">
+    <meta itemprop="author" content="<%c++ $$ << blog::html::attr(site.get("author", "").asString()); %>">
+    <header class="article-header" data-reveal>
+      <a class="article-back" href="/posts"><span aria-hidden="true">←</span> 返回文章索引</a>
       <div class="post-meta"><a href="/categories/<%c++ $$ << blog::html::attr(post["categorySlug"]); %>"><%c++ $$ << blog::html::text(post["categoryName"]); %></a><span><%c++ $$ << blog::html::text(post["publishedAt"]); %></span><span>更新于 <%c++ $$ << blog::html::text(post["updatedAt"]); %></span><span><%c++ $$ << post["readingMinutes"].asInt64(); %> 分钟阅读</span></div>
-      <h1><%c++ $$ << blog::html::text(post["title"]); %></h1>
-      <p class="article-deck"><%c++ $$ << blog::html::text(post["excerpt"]); %></p>
+      <h1 itemprop="headline"><%c++ $$ << blog::html::text(post["title"]); %></h1>
+      <p class="article-deck" itemprop="description"><%c++ $$ << blog::html::text(post["excerpt"]); %></p>
       <div class="article-actions">
         <div class="article-tags"><%c++ for (const auto &tag : post["tags"]) { $$ << blog::view::tagLink(tag); } %></div>
-        <%c++ if (!sourceUrl.empty()) { %><a class="source-link" href="<%c++ $$ << blog::html::escape(sourceUrl); %>" target="_blank" rel="noopener noreferrer">在 GitHub 查看原文</a><%c++ } %>
+        <%c++ if (!sourceUrl.empty()) { %><a class="source-link" href="<%c++ $$ << blog::html::escape(sourceUrl); %>" target="_blank" rel="noopener noreferrer">GitHub 原文 <span aria-hidden="true">↗</span></a><%c++ } %>
       </div>
     </header>
-    <div class="article-rule"></div>
-    <div class="prose"><%c++ $$ << post["contentHtml"].asString(); %></div>
+    <div class="article-rule"><span></span></div>
+    <div class="article-layout">
+      <aside class="article-rail" aria-label="文章目录">
+        <div class="toc-panel"><p>ON THIS PAGE</p><nav class="article-toc"></nav></div>
+      </aside>
+      <div class="prose" itemprop="articleBody"><%c++ $$ << post["contentHtml"].asString(); %></div>
+    </div>
   </article>
+
+  <%c++ if (!navigation.empty()) { %>
+  <nav class="article-navigation shell-narrow" aria-label="相邻文章">
+    <%c++ if (navigation.isMember("previous")) { const auto &previous = navigation["previous"]; %>
+    <a class="article-nav-link article-nav-link--previous" href="/posts/<%c++ $$ << blog::html::attr(previous["slug"]); %>"><span>上一篇</span><strong><%c++ $$ << blog::html::text(previous["title"]); %></strong></a>
+    <%c++ } %>
+    <%c++ if (navigation.isMember("next")) { const auto &next = navigation["next"]; %>
+    <a class="article-nav-link article-nav-link--next" href="/posts/<%c++ $$ << blog::html::attr(next["slug"]); %>"><span>下一篇</span><strong><%c++ $$ << blog::html::text(next["title"]); %></strong></a>
+    <%c++ } %>
+  </nav>
+  <%c++ } %>
+
+  <%c++ if (!related.empty()) { %>
+  <section class="related-section shell" aria-labelledby="related-title">
+    <div class="section-heading"><div><span class="section-number">CONTINUE</span><h2 id="related-title">继续阅读</h2><p>从相邻主题与标签中选出的文章。</p></div></div>
+    <div class="related-grid"><%c++ for (const auto &item : related) { $$ << blog::view::postCard(item, true); } %></div>
+  </section>
+  <%c++ } %>
 
   <section class="comments-section shell-narrow" aria-labelledby="comments-title">
     <div class="section-heading"><div><h2 id="comments-title">评论</h2><p>评论由 GitHub Discussions 托管。</p></div></div>
@@ -51,4 +90,5 @@ $$ << blog::view::pageHeader(site, post["title"].asString(), description);
     <%c++ } %>
   </section>
 </main>
+<button class="back-to-top icon-button" type="button" aria-label="回到顶部"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 14 6-6 6 6"/></svg></button>
 <%c++ $$ << blog::view::pageFooter(site); %>

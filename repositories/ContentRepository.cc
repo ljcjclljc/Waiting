@@ -10,11 +10,17 @@
 #include <map>
 #include <sstream>
 #include <stdexcept>
+#include <unordered_set>
 
 namespace blog
 {
 namespace
 {
+constexpr std::uintmax_t kMaxPostBytes = 2 * 1024 * 1024;
+constexpr std::size_t kMaxFrontMatterBytes = 64 * 1024;
+constexpr std::size_t kMaxPosts = 1000;
+constexpr Json::ArrayIndex kMaxTags = 32;
+
 std::string stripCarriageReturn(std::string line)
 {
     if (!line.empty() && line.back() == '\r')
@@ -81,6 +87,9 @@ std::size_t utf8Characters(const std::string &text)
 
 Json::Value readPost(const std::filesystem::path &path)
 {
+    if (std::filesystem::file_size(path) > kMaxPostBytes)
+        throw std::runtime_error(path.string() + ": content file is too large");
+
     std::ifstream input(path, std::ios::binary);
     if (!input)
         throw std::runtime_error("Cannot open content file: " + path.string());
@@ -103,6 +112,10 @@ Json::Value readPost(const std::filesystem::path &path)
             break;
         }
         metadataText << line << '\n';
+        if (static_cast<std::size_t>(metadataText.tellp()) >
+            kMaxFrontMatterBytes)
+            throw std::runtime_error(path.string() +
+                                     ": front matter is too large");
     }
     if (!closed)
         throw std::runtime_error(path.string() + ": front matter is not closed");
@@ -160,6 +173,8 @@ Json::Value readPost(const std::filesystem::path &path)
     const auto &tags = metadata["tags"];
     if (!tags.isNull() && !tags.isArray())
         throw std::runtime_error(path.string() + ": tags must be an array");
+    if (tags.size() > kMaxTags)
+        throw std::runtime_error(path.string() + ": too many tags");
     for (const auto &tag : tags)
     {
         if (!tag.isObject())
@@ -181,6 +196,34 @@ bool hasTag(const Json::Value &post, const std::string &slug)
                            return tag["slug"].asString() == slug;
                        });
 }
+
+std::vector<const Json::Value *> chronologicalPosts(
+    const std::vector<Json::Value> &posts)
+{
+    std::vector<const Json::Value *> ordered;
+    ordered.reserve(posts.size());
+    for (const auto &post : posts)
+        ordered.push_back(&post);
+    std::sort(ordered.begin(), ordered.end(), [](const auto *left, const auto *right) {
+        if ((*left)["publishedAt"].asString() !=
+            (*right)["publishedAt"].asString())
+            return (*left)["publishedAt"].asString() >
+                   (*right)["publishedAt"].asString();
+        return (*left)["slug"].asString() < (*right)["slug"].asString();
+    });
+    return ordered;
+}
+
+int relatedScore(const Json::Value &post, const Json::Value &candidate)
+{
+    int score = post["categorySlug"] == candidate["categorySlug"] ? 4 : 0;
+    for (const auto &tag : post["tags"])
+    {
+        if (hasTag(candidate, tag["slug"].asString()))
+            score += 2;
+    }
+    return score;
+}
 }  // namespace
 
 ContentRepository::ContentRepository(std::filesystem::path contentDirectory)
@@ -189,11 +232,23 @@ ContentRepository::ContentRepository(std::filesystem::path contentDirectory)
         throw std::runtime_error("Content directory not found: " +
                                  contentDirectory.string());
 
+    std::unordered_set<std::string> slugs;
+    std::size_t markdownFiles = 0;
     for (const auto &entry : std::filesystem::directory_iterator(contentDirectory))
     {
+        if (entry.path().extension() != ".md")
+            continue;
+        if (++markdownFiles > kMaxPosts)
+            throw std::runtime_error("Content directory has too many Markdown files");
+        if (entry.is_symlink())
+            throw std::runtime_error("Content symlinks are not allowed: " +
+                                     entry.path().filename().string());
         if (entry.is_regular_file() && entry.path().extension() == ".md")
         {
             auto post = readPost(entry.path());
+            if (!slugs.insert(post["slug"].asString()).second)
+                throw std::runtime_error("Duplicate content slug: " +
+                                         post["slug"].asString());
             if (!post["draft"].asBool() &&
                 post["publishedAt"].asString() <= today())
                 posts_.push_back(std::move(post));
@@ -233,14 +288,18 @@ Json::Value ContentRepository::listPublished(
 
     Json::Value result;
     result["items"] = Json::arrayValue;
-    const auto start = static_cast<std::size_t>((page - 1) * pageSize);
-    const auto end = (std::min)(matches.size(), start + pageSize);
+    const auto pages = static_cast<int>((matches.size() + pageSize - 1) / pageSize);
+    page = (std::min)(page, (std::max)(1, pages));
+    const auto start = static_cast<std::size_t>(page - 1) *
+                       static_cast<std::size_t>(pageSize);
+    const auto end = (std::min)(matches.size(),
+                                start + static_cast<std::size_t>(pageSize));
     for (auto index = start; index < end; ++index)
         result["items"].append(*matches[index]);
     result["page"] = page;
     result["pageSize"] = pageSize;
     result["total"] = static_cast<Json::Int64>(matches.size());
-    result["pages"] = static_cast<int>((matches.size() + pageSize - 1) / pageSize);
+    result["pages"] = pages;
     result["query"] = query;
     return result;
 }
@@ -252,6 +311,87 @@ Json::Value ContentRepository::findPublishedBySlug(const std::string &slug) cons
                                         return post["slug"].asString() == slug;
                                     });
     return found == posts_.end() ? Json::Value{} : *found;
+}
+
+Json::Value ContentRepository::listAllPublished() const
+{
+    Json::Value result(Json::arrayValue);
+    for (const auto *post : chronologicalPosts(posts_))
+        result.append(*post);
+    return result;
+}
+
+Json::Value ContentRepository::listArchive() const
+{
+    Json::Value result(Json::arrayValue);
+    std::string currentYear;
+    Json::Value group;
+    for (const auto *post : chronologicalPosts(posts_))
+    {
+        const auto date = (*post)["publishedAt"].asString();
+        const auto year = date.size() >= 4 ? date.substr(0, 4) : "其他";
+        if (year != currentYear)
+        {
+            if (!currentYear.empty())
+                result.append(std::move(group));
+            currentYear = year;
+            group = Json::Value(Json::objectValue);
+            group["year"] = year;
+            group["posts"] = Json::arrayValue;
+        }
+        group["posts"].append(*post);
+    }
+    if (!currentYear.empty())
+        result.append(std::move(group));
+    return result;
+}
+
+Json::Value ContentRepository::navigationForSlug(const std::string &slug) const
+{
+    Json::Value result(Json::objectValue);
+    const auto ordered = chronologicalPosts(posts_);
+    const auto found = std::find_if(ordered.begin(), ordered.end(), [&slug](const auto *post) {
+        return (*post)["slug"].asString() == slug;
+    });
+    if (found == ordered.end())
+        return result;
+
+    const auto index = static_cast<std::size_t>(std::distance(ordered.begin(), found));
+    if (index + 1 < ordered.size())
+        result["previous"] = *ordered[index + 1];
+    if (index > 0)
+        result["next"] = *ordered[index - 1];
+    return result;
+}
+
+Json::Value ContentRepository::relatedPublished(const std::string &slug,
+                                                std::size_t limit) const
+{
+    Json::Value result(Json::arrayValue);
+    const auto current = findPublishedBySlug(slug);
+    if (current.isNull() || limit == 0)
+        return result;
+
+    struct Candidate
+    {
+        const Json::Value *post;
+        int score;
+    };
+    std::vector<Candidate> candidates;
+    for (const auto &post : posts_)
+    {
+        if (post["slug"].asString() != slug)
+            candidates.push_back({&post, relatedScore(current, post)});
+    }
+    std::sort(candidates.begin(), candidates.end(), [](const auto &left, const auto &right) {
+        if (left.score != right.score)
+            return left.score > right.score;
+        return (*left.post)["publishedAt"].asString() >
+               (*right.post)["publishedAt"].asString();
+    });
+    for (std::size_t index = 0; index < (std::min)(limit, candidates.size()); ++index)
+        result.append(*candidates[index].post);
+    return result;
 }
 
 Json::Value ContentRepository::listCategories() const
@@ -287,6 +427,24 @@ Json::Value ContentRepository::listTags() const
     for (const auto &[_, tag] : tags)
         result.append(tag);
     return result;
+}
+
+std::string ContentRepository::categoryName(const std::string &slug) const
+{
+    const auto categories = listCategories();
+    const auto found = std::find_if(categories.begin(), categories.end(), [&slug](const auto &item) {
+        return item["slug"].asString() == slug;
+    });
+    return found == categories.end() ? std::string{} : (*found)["name"].asString();
+}
+
+std::string ContentRepository::tagName(const std::string &slug) const
+{
+    const auto tags = listTags();
+    const auto found = std::find_if(tags.begin(), tags.end(), [&slug](const auto &item) {
+        return item["slug"].asString() == slug;
+    });
+    return found == tags.end() ? std::string{} : (*found)["name"].asString();
 }
 
 std::size_t ContentRepository::size() const noexcept

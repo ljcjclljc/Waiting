@@ -28,6 +28,7 @@ set(BLOG_SOURCES
     main.cc
     controllers/PublicController.cc
     repositories/ContentRepository.cc
+    repositories/ContentStore.cc
     services/MarkdownService.cc
 )
 

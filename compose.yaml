@@ -6,4 +6,25 @@ services:
       - "8080:8080"
     volumes:
       - ./content:/app/content:ro
+    read_only: true
+    tmpfs:
+      - /tmp:size=16m,mode=1777
+    init: true
+    pids_limit: 128
+    mem_limit: 512m
+    cpus: 1.0
+    stop_grace_period: 10s
+    ulimits:
+      nofile:
+        soft: 4096
+        hard: 4096
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
     restart: unless-stopped
