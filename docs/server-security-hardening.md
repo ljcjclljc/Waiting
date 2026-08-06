@@ -36,8 +36,13 @@
 - 公网只应直接保留 `22`、`80` 和 `443`。
 - `5000` 为 root 权限远程管理服务，只允许服务器本机访问。
 - `5001` 和 `8080` 已通过 `DOCKER-USER` 链限制公网访问。
-- `5002` 和 `5003` 的 Docker NAT 原始目标端口规则已生成，等待远程审批恢复后部署。
+- `5002` 和 `5003` 使用 Docker NAT 原始目标端口规则限制公网访问。
 - 防火墙规则由 systemd 服务恢复，并在 Docker 启动后重新应用。
+- root 远程管理、NPM、Portainer、Adminer 和 Redis 的反向代理 Host 对公网返回 404。
+- 主机 INPUT 使用白名单策略，默认丢弃未明确允许的新入站连接。
+- IPv6 没有公网地址，但仍预设仅允许 SSH、HTTP、HTTPS 和 ICMPv6。
+- 关闭 LLMNR 和 MulticastDNS，避免不需要的本地名称发现入口。
+- 启用 SYN Cookie、禁止 ICMP Redirect/Source Route，并限制内核信息读取。
 
 管理服务应通过 SSH 隧道访问：
 
