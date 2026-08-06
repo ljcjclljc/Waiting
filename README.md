@@ -49,7 +49,7 @@ docker compose up --build -d
 2. 本地启动博客并检查文章、分类、标签和代码块。
 3. 本地发布到服务器：`powershell -ExecutionPolicy Bypass -File deploy/publish-to-blog.ps1`。
 4. 备份到 GitHub：`git add content/posts && git commit && git push`，或直接使用 `deploy/publish-to-blog.ps1 -PushGit` 一步完成。
-5. 只有 C++、模板、CSS、配置或静态资源变化才需要重建并重启镜像；Markdown 文章由服务器热加载。
+5. 只有 C++、模板、CSS、配置或静态资源变化才需要重建并重启镜像；服务器每两秒扫描 Markdown 目录，文章新增、修改和删除都会自动热加载。
 
 ## 绑定 GitHub 与 Giscus
 

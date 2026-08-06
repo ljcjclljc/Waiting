@@ -36,7 +36,7 @@ Override them with `-Server`, `-User`, `-IdentityFile`, and `-KnownHostsFile` if
 2. Computes the SHA256 digest and uses its first 40 hex characters as the content version.
 3. Runs `ssh blog-deploy@<server> "publish <digest>"` and streams the tar on stdin.
 4. The server checks the digest, rejects unsafe tar paths/symlinks/oversized content, validates Markdown, swaps `content/posts`, writes `.content-version`, and waits for `/health` to report the new digest.
-5. Drogon reloads the content within about two seconds; the container is not restarted.
+5. Drogon checks the Markdown directory fingerprint every two seconds and reloads within about two seconds; the container is not restarted. The version marker remains useful for deployment status, but it is not required for direct file changes to be detected.
 
 ## First-time server setup
 
