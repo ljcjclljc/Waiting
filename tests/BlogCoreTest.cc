@@ -174,6 +174,11 @@ DROGON_TEST(ContentStoreReloadsValidSnapshotsAndKeepsTheLastGoodVersion)
     CHECK(firstSnapshot->findPublishedBySlug("hot-reload")["title"].asString() ==
           "Version One");
 
+    writePost("Directory Change");
+    CHECK(store.reloadIfChanged());
+    CHECK(store.snapshot()->findPublishedBySlug("hot-reload")["title"].asString() ==
+          "Directory Change");
+
     writePost("Version Two");
     writeVersion('a');
     CHECK(store.reloadIfChanged());

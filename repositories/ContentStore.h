@@ -34,6 +34,7 @@ class ContentStore
     mutable std::mutex reloadMutex_;
     std::string activeVersion_{"startup"};
     std::string observedVersion_;
+    std::string activeContentFingerprint_;
     std::string lastError_;
 };
 
