@@ -2,12 +2,11 @@
 set -euo pipefail
 
 readonly PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-readonly REPOSITORY_URL="https://github.com/ljcjclljc/Waiting.git"
 readonly STATE_DIRECTORY="/var/lib/chen-blog-content"
-readonly REPOSITORY_DIRECTORY="${STATE_DIRECTORY}/repo.git"
+readonly INCOMING_DIRECTORY="$STATE_DIRECTORY/incoming"
 readonly CONTENT_DIRECTORY="/opt/chen-blog/content"
-readonly POSTS_DIRECTORY="${CONTENT_DIRECTORY}/posts"
-readonly VERSION_FILE="${CONTENT_DIRECTORY}/.content-version"
+readonly POSTS_DIRECTORY="$CONTENT_DIRECTORY/posts"
+readonly VERSION_FILE="$CONTENT_DIRECTORY/.content-version"
 readonly CONTAINER_NAME="chen-blog-blog-1"
 readonly HEALTH_URL="http://127.0.0.1:8080/health"
 readonly MAX_FILES=1100
@@ -18,146 +17,131 @@ die() {
     exit 1
 }
 
-[[ $# -eq 1 ]] || die "expected one commit SHA"
-readonly COMMIT_SHA="$1"
-[[ "${COMMIT_SHA}" =~ ^[0-9a-f]{40}$ ]] || die "invalid commit SHA"
+if [[ $# -eq 2 && "$1" == "publish" ]]; then
+    shift
+fi
+[[ $# -eq 1 ]] || die "expected publish <40-hex content digest>"
+readonly DIGEST="$1"
+[[ "$DIGEST" =~ ^[0-9a-f]{40}$ ]] || die "invalid content digest"
 
-for command_name in curl docker flock git rsync tar; do
-    command -v "${command_name}" >/dev/null 2>&1 ||
-        die "required command is missing: ${command_name}"
+for command_name in awk cut curl docker du flock grep head mktemp mv rsync seq sha256sum sleep tar tr wc; do
+    command -v "$command_name" >/dev/null 2>&1 ||
+        die "required command is missing: $command_name"
 done
 
 umask 022
-install -d -m 0755 "${STATE_DIRECTORY}" "${CONTENT_DIRECTORY}"
-exec 9>"${STATE_DIRECTORY}/deploy.lock"
+install -d -m 0755 "$STATE_DIRECTORY" "$CONTENT_DIRECTORY"
+install -d -m 0700 "$INCOMING_DIRECTORY"
+exec 9>"$STATE_DIRECTORY/deploy.lock"
 flock -w 180 9 || die "another content deployment is still running"
 
-if [[ ! -d "${REPOSITORY_DIRECTORY}" ]]; then
-    git init --bare "${REPOSITORY_DIRECTORY}" >/dev/null
+readonly INCOMING_FILE="$INCOMING_DIRECTORY/$DIGEST.tar"
+readonly INCOMING_TMP="$INCOMING_FILE.tmp"
+rm -f -- "$INCOMING_TMP"
+head -c $((MAX_BYTES + 1)) >"$INCOMING_TMP"
+readonly INCOMING_SIZE="$(wc -c <"$INCOMING_TMP")"
+if [[ "$INCOMING_SIZE" -eq 0 ]]; then
+    die "content bundle is empty"
 fi
-if git --git-dir="${REPOSITORY_DIRECTORY}" remote get-url origin >/dev/null 2>&1; then
-    git --git-dir="${REPOSITORY_DIRECTORY}" remote set-url origin "${REPOSITORY_URL}"
-else
-    git --git-dir="${REPOSITORY_DIRECTORY}" remote add origin "${REPOSITORY_URL}"
+if [[ "$INCOMING_SIZE" -gt "$MAX_BYTES" ]]; then
+    die "content bundle exceeds $MAX_BYTES bytes"
 fi
+ACTUAL_DIGEST="$(sha256sum "$INCOMING_TMP" | awk '{print $1}' | cut -c1-40)"
+if [[ "$ACTUAL_DIGEST" != "$DIGEST" ]]; then
+    die "content digest mismatch: expected $DIGEST, got $ACTUAL_DIGEST"
+fi
+mv -f -- "$INCOMING_TMP" "$INCOMING_FILE"
 
-fetched=false
-for attempt in 1 2 3; do
-    if git --git-dir="${REPOSITORY_DIRECTORY}" fetch \
-        --force --no-tags --depth=1 origin \
-        "+refs/heads/main:refs/heads/deploy-main"; then
-        fetched=true
-        break
-    fi
-    printf 'Fetch attempt %d failed; retrying...\n' "${attempt}" >&2
-    sleep $((attempt * 3))
-done
-if [[ "${fetched}" == true ]]; then
-    main_sha="$(git --git-dir="${REPOSITORY_DIRECTORY}" \
-        rev-parse refs/heads/deploy-main)"
-    [[ "${COMMIT_SHA}" == "${main_sha}" ]] ||
-        die "${COMMIT_SHA} is not the current main commit (${main_sha})"
-else
-    printf 'GitHub fetch failed; checking local deployment repository.\n' >&2
-    local_sha="$(git --git-dir="${REPOSITORY_DIRECTORY}" \
-        rev-parse --verify -q "${COMMIT_SHA}^{commit}" || true)"
-    if [[ -z "${local_sha}" || "${local_sha}" != "${COMMIT_SHA}" ]]; then
-        die "could not fetch ${COMMIT_SHA} from GitHub or local repository"
-    fi
-    local_main="$(git --git-dir="${REPOSITORY_DIRECTORY}" \
-        rev-parse --verify -q refs/remotes/origin/main || true)"
-    if [[ -n "${local_main}" && "${local_main}" != "${COMMIT_SHA}" ]]; then
-        printf 'Warning: requested commit is not the latest known main commit; deploying requested SHA.\n' >&2
-    fi
-fi
-
-readonly STAGE_DIRECTORY="$(mktemp -d "${CONTENT_DIRECTORY}/.deploy-stage.XXXXXX")"
-readonly BACKUP_DIRECTORY="$(mktemp -d "${STATE_DIRECTORY}/backup.XXXXXX")"
-readonly STAGE_NAME="$(basename "${STAGE_DIRECTORY}")"
-readonly STAGED_POSTS="${STAGE_DIRECTORY}/content/posts"
-chmod 0755 "${STAGE_DIRECTORY}"
+readonly STAGE_DIRECTORY="$(mktemp -d "$CONTENT_DIRECTORY/.deploy-stage.XXXXXX")"
+readonly BACKUP_DIRECTORY="$(mktemp -d "$STATE_DIRECTORY/backup.XXXXXX")"
+readonly STAGE_NAME="$(basename "$STAGE_DIRECTORY")"
+readonly STAGED_POSTS="$STAGE_DIRECTORY/content/posts"
+chmod 0755 "$STAGE_DIRECTORY"
 deployment_applied=false
 previous_version=""
 had_previous_version=false
 
 cleanup() {
-    rm -rf -- "${STAGE_DIRECTORY}" "${BACKUP_DIRECTORY}"
+    rm -rf -- "$STAGE_DIRECTORY" "$BACKUP_DIRECTORY" "$INCOMING_FILE" "$INCOMING_TMP"
 }
 
 rollback() {
-    if [[ "${deployment_applied}" != true ]]; then
+    if [[ "$deployment_applied" != true ]]; then
         return
     fi
     printf 'Health verification failed; restoring previous content.\n' >&2
-    if [[ -d "${BACKUP_DIRECTORY}/posts" ]]; then
-        install -d -m 0755 "${POSTS_DIRECTORY}"
-        rsync -a --delete --delay-updates --chmod=D755,F644 \
-            "${BACKUP_DIRECTORY}/posts/" "${POSTS_DIRECTORY}/"
+    if [[ -d "$BACKUP_DIRECTORY/posts" ]]; then
+        install -d -m 0755 "$POSTS_DIRECTORY"
+        rsync -a --delete --delay-updates --chmod=D755,F644 "$BACKUP_DIRECTORY/posts/" "$POSTS_DIRECTORY/"
     else
-        rm -rf -- "${POSTS_DIRECTORY}"
+        rm -rf -- "$POSTS_DIRECTORY"
     fi
-    if [[ "${had_previous_version}" == true ]]; then
-        printf '%s\n' "${previous_version}" >"${VERSION_FILE}.rollback"
-        mv -f -- "${VERSION_FILE}.rollback" "${VERSION_FILE}"
+    if [[ "$had_previous_version" == true ]]; then
+        printf '%s\n' "$previous_version" >"$VERSION_FILE.rollback"
+        mv -f -- "$VERSION_FILE.rollback" "$VERSION_FILE"
     else
-        rm -f -- "${VERSION_FILE}"
+        rm -f -- "$VERSION_FILE"
     fi
 }
 
 on_exit() {
     status=$?
-    if [[ ${status} -ne 0 ]]; then
+    if [[ $status -ne 0 ]]; then
         rollback || true
     fi
     cleanup
-    exit "${status}"
+    exit "$status"
 }
 trap on_exit EXIT
 
-git --git-dir="${REPOSITORY_DIRECTORY}" archive "${COMMIT_SHA}" content/posts |
-    tar -x -C "${STAGE_DIRECTORY}"
-[[ -d "${STAGED_POSTS}" ]] || die "commit does not contain content/posts"
+if tar -tf "$INCOMING_FILE" | grep -E '(^/|^[A-Za-z]:/|(^|/)\.\.(/|$))' >/dev/null; then
+    die "content bundle contains unsafe paths"
+fi
+if tar -tvf "$INCOMING_FILE" | awk '$1 ~ /^l/ { found = 1 } END { exit !found }'; then
+    die "content bundle contains symlinks"
+fi
 
-if find "${STAGED_POSTS}" -type l -print -quit | grep -q .; then
+tar -xf "$INCOMING_FILE" -C "$STAGE_DIRECTORY" --no-same-owner --no-same-permissions --no-overwrite-dir
+[[ -d "$STAGED_POSTS" ]] || die "bundle does not contain content/posts"
+
+if find "$STAGED_POSTS" -type l -print -quit | grep -q .; then
     die "content symlinks are not allowed"
 fi
-if find "${STAGED_POSTS}" ! -type f ! -type d -print -quit | grep -q .; then
+if find "$STAGED_POSTS" ! -type f ! -type d -print -quit | grep -q .; then
     die "content may contain only regular files and directories"
 fi
-file_count="$(find "${STAGED_POSTS}" -type f | wc -l)"
-[[ "${file_count}" -le "${MAX_FILES}" ]] || die "too many content files"
-byte_count="$(du -sb "${STAGED_POSTS}" | awk '{print $1}')"
-[[ "${byte_count}" -le "${MAX_BYTES}" ]] || die "content is too large"
+file_count="$(find "$STAGED_POSTS" -type f | wc -l)"
+[[ "$file_count" -le "$MAX_FILES" ]] || die "too many content files"
+byte_count="$(du -sb "$STAGED_POSTS" | awk '{print $1}')"
+[[ "$byte_count" -le "$MAX_BYTES" ]] || die "content is too large"
 
-docker exec "${CONTAINER_NAME}" /app/drogon_blog --validate-content \
-    "/app/content/${STAGE_NAME}/content/posts"
+docker exec "$CONTAINER_NAME" /app/drogon_blog --validate-content "/app/content/$STAGE_NAME/content/posts"
 
-if [[ -f "${VERSION_FILE}" ]]; then
-    previous_version="$(tr -d '\r\n' <"${VERSION_FILE}")"
+if [[ -f "$VERSION_FILE" ]]; then
+    previous_version="$(tr -d '\r\n' <"$VERSION_FILE")"
     had_previous_version=true
 fi
-if [[ -d "${POSTS_DIRECTORY}" ]]; then
-    install -d -m 0755 "${BACKUP_DIRECTORY}/posts"
-    rsync -a "${POSTS_DIRECTORY}/" "${BACKUP_DIRECTORY}/posts/"
+if [[ -d "$POSTS_DIRECTORY" ]]; then
+    install -d -m 0755 "$BACKUP_DIRECTORY/posts"
+    rsync -a "$POSTS_DIRECTORY/" "$BACKUP_DIRECTORY/posts/"
 fi
 
-install -d -m 0755 "${POSTS_DIRECTORY}"
-rsync -a --delete --delay-updates --chmod=D755,F644 \
-    "${STAGED_POSTS}/" "${POSTS_DIRECTORY}/"
+install -d -m 0755 "$POSTS_DIRECTORY"
+rsync -a --delete --delay-updates --chmod=D755,F644 "$STAGED_POSTS/" "$POSTS_DIRECTORY/"
 deployment_applied=true
-printf '%s\n' "${COMMIT_SHA}" >"${VERSION_FILE}.tmp"
-chmod 0644 "${VERSION_FILE}.tmp"
-mv -f -- "${VERSION_FILE}.tmp" "${VERSION_FILE}"
+printf '%s\n' "$DIGEST" >"$VERSION_FILE.tmp"
+chmod 0644 "$VERSION_FILE.tmp"
+mv -f -- "$VERSION_FILE.tmp" "$VERSION_FILE"
 
 for attempt in $(seq 1 30); do
-    health="$(curl --fail --silent --show-error --max-time 3 "${HEALTH_URL}" || true)"
-    if grep -Eq '"contentReload"[[:space:]]*:[[:space:]]*"up"' <<<"${health}" &&
-        grep -Eq "\"contentVersion\"[[:space:]]*:[[:space:]]*\"${COMMIT_SHA}\"" <<<"${health}"; then
+    health="$(curl --fail --silent --show-error --max-time 3 "$HEALTH_URL" || true)"
+    if grep -Eq '"contentReload"[[:space:]]*:[[:space:]]*"up"' <<<"$health" &&
+        grep -Eq "\"contentVersion\"[[:space:]]*:[[:space:]]*\"$DIGEST\"" <<<"$health"; then
         deployment_applied=false
-        printf 'Content deployment succeeded at %s.\n' "${COMMIT_SHA}"
+        printf 'Content deployment succeeded at %s.\n' "$DIGEST"
         exit 0
     fi
     sleep 2
 done
 
-die "Drogon did not activate ${COMMIT_SHA} within 60 seconds"
+die "Drogon did not activate $DIGEST within 60 seconds"

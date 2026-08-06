@@ -2,13 +2,14 @@
 
 > 在代码与晨光之间，记录 C++、网络与系统世界的思考。
 
-晨's Blog 是一个采用 Hexo 式发布模型的 Drogon 动态博客。文章以本地 Markdown 文件为唯一内容源，提交并推送到 GitHub 后由 Actions 验证并构建容器。网站不提供文章管理后台，访客只能阅读内容，并通过 Giscus 在 GitHub Discussions 中评论。
+晨's Blog 是一个采用 Hexo 式发布模型的 Drogon 动态博客。文章以本地 Markdown 文件为唯一内容源，直接发布到服务器进行热加载；同一内容推送到 GitHub 作为备份与版本历史，GitHub Actions 只构建容器镜像。网站不提供文章管理后台，访客只能阅读内容，并通过 Giscus 在 GitHub Discussions 中评论。
 
 ## 架构
 
 ```text
-content/posts/*.md -> git push -> GitHub Actions -> GHCR 容器
-                              \-> GitHub Discussions / Giscus 评论
+content/posts/*.md -> local publish script -> server content hot reload
+content/posts/*.md -> git push -> GitHub backup/history
+                                          \-> GitHub Discussions / Giscus 评论
 ```
 
 - Drogon：路由、服务端渲染、搜索、分类、标签、归档、RSS 和站点地图。
@@ -46,9 +47,9 @@ docker compose up --build -d
 
 1. 在 `content/posts` 新建 `<slug>.md`，格式见 `content/README.md`。
 2. 本地启动博客并检查文章、分类、标签和代码块。
-3. 提交并推送：`git add content/posts && git commit && git push`。
-4. `.github/workflows/publish.yml` 会验证 Docker 构建，并在 `main` 分支推送时发布到 `ghcr.io/<owner>/<repo>`。
-5. 部署主机从 GHCR 拉取新镜像并重启后，文章才会显示。
+3. 本地发布到服务器：`powershell -ExecutionPolicy Bypass -File deploy/publish-to-blog.ps1`。
+4. 备份到 GitHub：`git add content/posts && git commit && git push`，或直接使用 `deploy/publish-to-blog.ps1 -PushGit` 一步完成。
+5. 只有 C++、模板、CSS、配置或静态资源变化才需要重建并重启镜像；Markdown 文章由服务器热加载。
 
 ## 绑定 GitHub 与 Giscus
 

@@ -16,8 +16,18 @@
 ghcr.io/OWNER/REPOSITORY:latest
 ```
 
-服务器需要拉取该镜像并将 `8080` 映射到反向代理。自动部署到具体服务器还需要服务器地址、SSH 凭据和域名，这些信息不应提交到仓库；应保存为 GitHub Actions Secrets 或由服务器端更新服务管理。
+服务器需要拉取该镜像并将 `8080` 映射到反向代理。C++、模板、CSS、配置或静态资源变化时需要重新构建和滚动替换容器；Markdown 文章不需要。
 
 ## 内容发布
 
-文章只从 `content/posts/*.md` 加载。网站没有写文章或删除文章的路由，因此浏览器用户无法修改内容。修改文章必须经过 Git 提交和部署。
+文章只从 `content/posts/*.md` 加载。网站没有写文章或删除文章的路由，因此浏览器用户无法修改内容。
+
+发布到服务器：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File deploy/publish-to-blog.ps1
+```
+
+服务器不再访问 GitHub。`publish-to-blog.ps1` 会把本地 Markdown 包直接流式发送给受限 SSH 账号，服务器校验后写入 `content/posts`，Drogon 在约两秒内热加载，不重启容器。
+
+备份到 GitHub：正常提交并推送 `content/posts`，或使用 `-PushGit` 让发布脚本在服务器发布成功后自动完成提交和推送。GitHub Actions 只构建容器镜像，不再部署文章。
