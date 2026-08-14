@@ -1637,13 +1637,28 @@ body[data-page="home"] .site-header .icon-button:hover {
 }
 
 .footer-base {
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 20px;
   padding-top: 20px;
   border-top: 1px solid rgba(255, 255, 255, 0.13);
   color: rgba(255, 255, 255, 0.36);
   font-family: Consolas, "SFMono-Regular", monospace;
   font-size: 9px;
+}
+
+.footer-base > :last-child {
+  text-align: right;
+}
+
+.icp-link {
+  color: inherit;
+  text-align: center;
+}
+
+.icp-link:hover {
+  color: var(--signal);
 }
 
 [data-reveal] {
@@ -2211,6 +2226,16 @@ body[data-page="home"] .site-footer {
 
   .footer-links {
     justify-content: flex-start;
+  }
+
+  .footer-base {
+    grid-template-columns: 1fr;
+    justify-items: center;
+    gap: 12px;
+  }
+
+  .footer-base > :last-child {
+    text-align: center;
   }
 }
 

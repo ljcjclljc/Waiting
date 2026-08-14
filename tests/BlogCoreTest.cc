@@ -4,11 +4,22 @@
 #include "repositories/ContentRepository.h"
 #include "repositories/ContentStore.h"
 #include "services/MarkdownService.h"
+#include "services/View.h"
 
 #include <chrono>
 #include <filesystem>
 #include <fstream>
 #include <limits>
+
+DROGON_TEST(FooterIncludesLinkedIcpRecord)
+{
+    Json::Value site;
+    const auto footer = blog::view::pageFooter(site);
+
+    CHECK(footer.find("豫ICP备2026037656号") != std::string::npos);
+    CHECK(footer.find("href=\"http://beian.miit.gov.cn/\"") !=
+          std::string::npos);
+}
 
 DROGON_TEST(MarkdownSafety)
 {

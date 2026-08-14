@@ -123,7 +123,9 @@ inline std::string pageFooter(const Json::Value &site)
         output << "<a href=\"" << html::escape(repositoryUrl)
                << "\" target=\"_blank\" rel=\"noopener noreferrer\">源码</a>";
     output << "<span>Drogon · Markdown · GitHub</span></div>"
-           << "</div><div class=\"shell footer-base\"><span>BUILD FROM SOURCE</span><span>© CHEN'S BLOG</span></div></footer></body></html>";
+           << "</div><div class=\"shell footer-base\"><span>BUILD FROM SOURCE</span>"
+           << "<a class=\"icp-link\" href=\"http://beian.miit.gov.cn/\" target=\"_blank\" rel=\"noopener noreferrer\">豫ICP备2026037656号</a>"
+           << "<span>© CHEN'S BLOG</span></div></footer></body></html>";
     return output.str();
 }
 
