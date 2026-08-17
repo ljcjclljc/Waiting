@@ -2,18 +2,17 @@
 
 > 在代码与晨光之间，记录 C++、网络与系统世界的思考。
 
-晨's Blog 是一个采用 Hexo 式发布模型的 Drogon 动态博客。文章以本地 Markdown 文件为唯一内容源，提交并推送到 GitHub 后由 Actions 验证并构建容器。网站不提供文章管理后台，访客只能阅读内容，并通过 Giscus 在 GitHub Discussions 中评论。
+晨's Blog 是一个采用 Hexo 式发布模型的 Drogon 动态博客。文章以本地 Markdown 文件为唯一内容源，提交并推送到 GitHub 后由 Actions 验证并构建容器。网站不提供文章管理后台，访客只能阅读内容。
 
 ## 架构
 
 ```text
 content/posts/*.md -> git push -> GitHub Actions -> GHCR 容器
-                              \-> GitHub Discussions / Giscus 评论
 ```
 
 - Drogon：路由、服务端渲染、搜索、分类、标签、归档、RSS 和站点地图。
 - Markdown：文章唯一数据源，使用严格 JSON Front Matter。
-- GitHub：代码与内容版本、构建触发、容器发布和评论数据。
+- GitHub：代码与内容版本、构建触发和容器发布。
 - PostgreSQL：不再是博客运行依赖。
 - 管理后台：不存在，也没有文章写入 API。
 
@@ -50,14 +49,10 @@ docker compose up --build -d
 4. `.github/workflows/publish.yml` 会验证 Docker 构建，并在 `main` 分支推送时发布到 `ghcr.io/<owner>/<repo>`。
 5. 部署主机从 GHCR 拉取新镜像并重启后，文章才会显示。
 
-## 绑定 GitHub 与 Giscus
+## 绑定 GitHub
 
-复制 `config/config.example.json` 的 GitHub/Giscus 字段到实际配置：
+复制 `config/config.example.json` 的 GitHub 字段到实际配置：
 
 - `site.github.repository_url`：仓库网页地址。
 - `site.github.branch`：文章所在分支，默认 `main`。
-- `site.giscus.repo`：`OWNER/REPOSITORY`。
-- `site.giscus.repo_id`、`category_id`：从 <https://giscus.app/zh-CN> 获取。
-- `site.giscus.enabled`：配置完成后设为 `true`。
-
-仓库必须公开、启用 Discussions，并安装 Giscus GitHub App。GitHub Pages 不能运行 Drogon；Drogon 容器需要部署在支持 Docker 的主机上。
+GitHub Pages 不能运行 Drogon；Drogon 容器需要部署在支持 Docker 的主机上。

@@ -23,10 +23,9 @@ GitHub 上能找到的 Drogon 博客示例大多是低关注度的 CRUD API 演�
 
 ```text
 本地 Markdown -> Git 提交 -> GitHub Actions 构建 -> Drogon 容器发布
-                                      \-> Giscus / GitHub Discussions 评论
 ```
 
-浏览器端没有文章新增、编辑或删除接口；访客只能阅读和评论。这样既保留了 Drogon 的动态路由与服务端渲染，也让文章变更始终经过 Git 历史。
+浏览器端没有文章新增、编辑、删除或评论接口，访客只能阅读。这样既保留了 Drogon 的动态路由与服务端渲染，也让文章变更始终经过 Git 历史。
 
 ## 已吸收的能力
 
@@ -40,7 +39,7 @@ GitHub 上能找到的 Drogon 博客示例大多是低关注度的 CRUD API 演�
 
 - 登录、管理员后台或浏览器写文章接口。
 - PostgreSQL、Redis、RabbitMQ 等当前业务不需要的运行依赖。
-- PJAX、PWA、多套评论系统和第三方分享脚本。
+- PJAX、PWA、评论系统和第三方分享脚本。
 - 会跟踪访客或拖慢首屏的第三方统计脚本。
 
 这些取舍让功能提升集中在阅读、发现、SEO 和可访问性上，不破坏“内容只能从本地 Markdown 与 GitHub 提交发布”的核心约束。

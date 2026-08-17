@@ -3,10 +3,7 @@
 ## 仓库设置
 
 1. 创建公开 GitHub 仓库并推送本项目。
-2. 在仓库 Settings > General > Features 中启用 Discussions。
-3. 在 <https://github.com/apps/giscus> 为仓库安装 Giscus。
-4. 在 <https://giscus.app/zh-CN> 选择仓库和 Discussions 分类，复制 `repo-id` 与 `category-id`。
-5. 更新生产配置中的 `site.github` 和 `site.giscus`。
+2. 更新生产配置中的 `site.github`。
 
 ## 容器发布
 

@@ -11,29 +11,6 @@
       ? "dark"
       : "light";
 
-  const syncCommentTheme = () => {
-    const frame = document.querySelector("iframe.giscus-frame");
-    frame?.contentWindow?.postMessage(
-      { giscus: { setConfig: { theme: root.dataset.theme } } },
-      "https://giscus.app",
-    );
-  };
-
-  window.addEventListener("message", (event) => {
-    const frame = document.querySelector("iframe.giscus-frame");
-    const height = Number(event.data?.giscus?.resizeHeight);
-    if (
-      event.origin === "https://giscus.app" &&
-      frame &&
-      event.source === frame.contentWindow &&
-      Number.isFinite(height) &&
-      height >= 150 &&
-      height <= 10000
-    ) {
-      frame.style.height = `${height}px`;
-    }
-  });
-
   const createToc = () => {
     const toc = document.querySelector(".article-toc");
     const headings = [...document.querySelectorAll(".prose h2, .prose h3")];
@@ -145,7 +122,6 @@
       try {
         localStorage.setItem("blog-theme", root.dataset.theme);
       } catch {}
-      syncCommentTheme();
     });
 
     navToggle?.addEventListener("click", () => {
@@ -214,17 +190,6 @@
 
     createToc();
     enhanceCodeBlocks();
-
-    if (document.querySelector('script[src="https://giscus.app/client.js"]')) {
-      const commentObserver = new MutationObserver(() => {
-        const frame = document.querySelector("iframe.giscus-frame");
-        if (frame) {
-          frame.addEventListener("load", syncCommentTheme, { once: true });
-          commentObserver.disconnect();
-        }
-      });
-      commentObserver.observe(document.body, { childList: true, subtree: true });
-    }
   };
 
   if (document.readyState === "loading")

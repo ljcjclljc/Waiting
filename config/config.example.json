@@ -24,13 +24,6 @@
       "github": {
         "repository_url": "https://github.com/OWNER/REPOSITORY",
         "branch": "main"
-      },
-      "giscus": {
-        "enabled": true,
-        "repo": "OWNER/REPOSITORY",
-        "repo_id": "R_REPOSITORY_ID",
-        "category": "Announcements",
-        "category_id": "DIC_CATEGORY_ID"
       }
     }
   }

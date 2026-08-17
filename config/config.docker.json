@@ -26,13 +26,6 @@
       "github": {
         "repository_url": "https://github.com/ljcjclljc/Waiting",
         "branch": "main"
-      },
-      "giscus": {
-        "enabled": true,
-        "repo": "ljcjclljc/Waiting",
-        "repo_id": "R_kgDOTca6Yg",
-        "category": "Waiting",
-        "category_id": "DIC_kwDOTca6Ys4DBens"
       }
     }
   }
