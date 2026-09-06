@@ -53,3 +53,26 @@ curl -fsS http://127.0.0.1:8080/health
 ```
 
 `contentReload` 应为 `up`，`contentVersion` 应等于 GitHub Actions 部署的提交 SHA。
+
+普通文章的发布入口是 Git 提交和 GitHub Actions：Actions 构建镜像并执行受限的 `deploy <SHA>` 命令。服务器端脚本位于 `deploy/deploy-blog-content.sh`，不应直接从公网调用。
+
+## 批量发布 C++ 每日一题
+
+可以把每日一题 Markdown 放在任意单独目录中，再使用仓库内的 PowerShell 脚本发布。脚本会先将文件提交并推送到当前 GitHub 分支，再通过受限 SSH 发布同一份内容到服务器：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File deploy/publish-cpp-daily.ps1 `
+  -SourceDirectory C:\path\to\cpp-daily
+```
+
+脚本只接受 `category.slug` 为 `cpp-daily`、且文件名与 slug 一致的 Markdown 文件。它会在本地组装保留普通文章的完整内容包，再通过受限 SSH 发送到对端服务器；栏目地址为 `/cpp-daily`。
+
+## 发布 AI 知识库和提示词
+
+运行以下脚本会递归遍历 `knowledge_base/` 与 `prompt_optimization/`，校验文本文件、符号链接和大小限制，然后提交推送 GitHub，并通过受限 SSH 上传到服务器：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File deploy/publish-ai-assets.ps1
+```
+
+服务器首次启用该通道时，需要重新以 `root` 运行 `deploy/install-blog-content-deploy.sh`，安装 `deploy-blog-ai-publish` 和对应的 `ai-publish <SHA>` 强制命令。Compose 已将两个目录以只读方式挂载到容器，发布完成后无需重启即可被问答服务重新读取。

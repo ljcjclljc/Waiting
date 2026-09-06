@@ -3,9 +3,13 @@ services:
     image: drogon-blog:github
     build: .
     ports:
-      - "8080:8080"
+      - "127.0.0.1:8080:8080"
+    environment:
+      ZHIPU_API_KEY: ${ZHIPU_API_KEY:-}
     volumes:
       - ./content:/app/content:ro
+      - ./knowledge_base:/app/knowledge_base:ro
+      - ./prompt_optimization:/app/prompt_optimization:ro
     read_only: true
     tmpfs:
       - /tmp:size=16m,mode=1777

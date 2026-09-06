@@ -274,6 +274,9 @@ Json::Value ContentRepository::listPublished(
     std::vector<const Json::Value *> matches;
     for (const auto &post : posts_)
     {
+        if (categorySlug.empty() &&
+            post["categorySlug"].asString() == "cpp-daily")
+            continue;
         if (!query.empty() && !contains(post["title"].asString(), query) &&
             !contains(post["excerpt"].asString(), query) &&
             !contains(post["content"].asString(), query))
@@ -311,6 +314,24 @@ Json::Value ContentRepository::findPublishedBySlug(const std::string &slug) cons
                                         return post["slug"].asString() == slug;
                                     });
     return found == posts_.end() ? Json::Value{} : *found;
+}
+
+Json::Value ContentRepository::dailyQuestionForToday() const
+{
+    const auto currentDate = today();
+    const Json::Value *selected = nullptr;
+    for (const auto &post : posts_)
+    {
+        if (post["categorySlug"].asString() != "cpp-daily" ||
+            post["publishedAt"].asString() != currentDate)
+            continue;
+        if (selected == nullptr ||
+            post["updatedAt"].asString() > (*selected)["updatedAt"].asString() ||
+            (post["updatedAt"].asString() == (*selected)["updatedAt"].asString() &&
+             post["slug"].asString() < (*selected)["slug"].asString()))
+            selected = &post;
+    }
+    return selected == nullptr ? Json::Value{} : *selected;
 }
 
 Json::Value ContentRepository::listAllPublished() const

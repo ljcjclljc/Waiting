@@ -1,12 +1,12 @@
 #include "PublicController.h"
 
 #include "Response.h"
+#include "services/AiChatService.h"
 #include "repositories/ContentStore.h"
 #include "services/Html.h"
 #include "services/MarkdownService.h"
 #include "services/SiteConfig.h"
 
-#include <algorithm>
 #include <charconv>
 #include <sstream>
 
@@ -40,6 +40,30 @@ std::shared_ptr<const ContentRepository> content()
 {
     return contentStore().snapshot();
 }
+
+std::string clientAddress(const drogon::HttpRequestPtr &request)
+{
+    const auto peer = request->getPeerAddr().toIp();
+    if (peer != "127.0.0.1" && peer != "::1")
+        return peer;
+
+    const auto forwarded = request->getHeader("X-Forwarded-For");
+    if (forwarded.empty())
+        return peer;
+    const auto comma = forwarded.find(',');
+    auto address = forwarded.substr(0, comma);
+    const auto first = address.find_first_not_of(" \t");
+    const auto last = address.find_last_not_of(" \t");
+    if (first == std::string::npos || last - first + 1 > 64)
+        return peer;
+    address = address.substr(first, last - first + 1);
+    if (address.empty() ||
+        address.find_first_not_of("0123456789abcdefABCDEF:.") !=
+            std::string::npos)
+        return peer;
+    return address;
+}
+
 }  // namespace
 
 drogon::Task<drogon::HttpResponsePtr> PublicController::home(
@@ -50,6 +74,7 @@ drogon::Task<drogon::HttpResponsePtr> PublicController::home(
         const auto repository = content();
         drogon::HttpViewData data;
         data.insert("posts", repository->listPublished(1, 7));
+        data.insert("dailyQuestion", repository->dailyQuestionForToday());
         data.insert("categories", repository->listCategories());
         data.insert("tags", repository->listTags());
         co_return view("Home", std::move(data));
@@ -100,6 +125,65 @@ drogon::Task<drogon::HttpResponsePtr> PublicController::archives(
         co_return viewError("无法读取文章归档。",
                             drogon::k503ServiceUnavailable);
     }
+}
+
+drogon::Task<drogon::HttpResponsePtr> PublicController::cppDaily(
+    drogon::HttpRequestPtr request)
+{
+    try
+    {
+        const auto repository = content();
+        const auto name = repository->categoryName("cpp-daily");
+        if (name.empty())
+            co_return viewError("每日一题栏目暂时没有内容。",
+                                drogon::k404NotFound);
+        drogon::HttpViewData data;
+        data.insert("title", name);
+        data.insert("canonicalPath", std::string("/cpp-daily"));
+        data.insert("posts", repository->listPublished(
+                                 pageParameter(request), 9, {}, "cpp-daily", {}));
+        data.insert("categories", repository->listCategories());
+        co_return view("PostList", std::move(data));
+    }
+    catch (const std::exception &error)
+    {
+        LOG_ERROR << error.what();
+        co_return viewError("无法读取每日一题栏目。",
+                            drogon::k503ServiceUnavailable);
+    }
+}
+
+drogon::Task<drogon::HttpResponsePtr> PublicController::chatPage(
+    drogon::HttpRequestPtr)
+{
+    drogon::HttpViewData data;
+    co_return view("Chat", std::move(data));
+}
+
+drogon::Task<drogon::HttpResponsePtr> PublicController::chat(
+    drogon::HttpRequestPtr request)
+{
+    const auto payload = request->getJsonObject();
+    if (!payload)
+        co_return jsonError("请求必须是 JSON 格式。", drogon::k400BadRequest);
+
+    const auto address = clientAddress(request);
+    const auto result = co_await AiChatService::instance().ask(*payload, address);
+    if (!result.ok)
+    {
+        auto response = jsonError(
+            result.message, static_cast<drogon::HttpStatusCode>(result.status));
+        response->addHeader("Cache-Control", "no-store");
+        co_return response;
+    }
+
+    Json::Value body;
+    body["ok"] = true;
+    body["answer"] = result.answer;
+    body["sources"] = static_cast<Json::UInt64>(result.sourceCount);
+    auto response = jsonResponse(std::move(body));
+    response->addHeader("Cache-Control", "no-store");
+    co_return response;
 }
 
 drogon::Task<drogon::HttpResponsePtr> PublicController::article(
@@ -245,6 +329,7 @@ drogon::Task<drogon::HttpResponsePtr> PublicController::sitemap(
         << "<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">"
         << "<url><loc>" << html::escape(base) << "/</loc></url>";
     xml << "<url><loc>" << html::escape(base) << "/posts</loc></url>"
+        << "<url><loc>" << html::escape(base) << "/cpp-daily</loc></url>"
         << "<url><loc>" << html::escape(base) << "/archives</loc></url>";
     for (const auto &post : posts)
         xml << "<url><loc>" << html::escape(base) << "/posts/"
@@ -297,4 +382,5 @@ drogon::Task<drogon::HttpResponsePtr> PublicController::health(
         co_return jsonResponse(std::move(body), drogon::k503ServiceUnavailable);
     }
 }
+
 }  // namespace blog

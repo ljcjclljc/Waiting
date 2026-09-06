@@ -12,8 +12,10 @@ WORKDIR /app
 COPY --from=build /src/build/drogon_blog /app/drogon_blog
 COPY --from=build /src/public /app/public
 COPY --from=build /src/content /app/content
+COPY --from=build /src/knowledge_base /app/knowledge_base
+COPY --from=build /src/prompt_optimization /app/prompt_optimization
 COPY --from=build /src/config/config.docker.json /app/config/config.docker.json
-RUN chmod -R a=rX /app/public /app/content /app/config \
+RUN chmod -R a=rX /app/public /app/content /app/knowledge_base /app/prompt_optimization /app/config \
     && chmod 0555 /app/drogon_blog
 USER 65532:65532
 EXPOSE 8080

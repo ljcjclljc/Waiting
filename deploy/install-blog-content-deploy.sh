@@ -15,11 +15,13 @@ readonly PUBLIC_KEY_FILE="$1"
 
 readonly SCRIPT_DIRECTORY="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 readonly DEPLOY_SCRIPT="${SCRIPT_DIRECTORY}/deploy-blog-content.sh"
+readonly PUBLISH_SCRIPT="${SCRIPT_DIRECTORY}/deploy-blog-content-publish.sh"
+readonly AI_PUBLISH_SCRIPT="${SCRIPT_DIRECTORY}/deploy-blog-ai-publish.sh"
 readonly COMMAND_SCRIPT="${SCRIPT_DIRECTORY}/blog-content-deploy-command.sh"
 readonly AUTHORIZED_KEYS="/home/blog-deploy/.ssh/authorized_keys"
 
-bash -n "${DEPLOY_SCRIPT}" "${COMMAND_SCRIPT}"
-for command_name in curl docker flock git rsync sudo tar visudo; do
+bash -n "${DEPLOY_SCRIPT}" "${PUBLISH_SCRIPT}" "${AI_PUBLISH_SCRIPT}" "${COMMAND_SCRIPT}"
+for command_name in awk curl cut docker flock git rsync sudo tar visudo; do
     command -v "${command_name}" >/dev/null 2>&1 ||
         die "required command is missing: ${command_name}"
 done
@@ -33,6 +35,10 @@ passwd --lock blog-deploy >/dev/null
 
 install -o root -g root -m 0755 "${DEPLOY_SCRIPT}" \
     /usr/local/sbin/deploy-blog-content
+install -o root -g root -m 0755 "${PUBLISH_SCRIPT}" \
+    /usr/local/sbin/deploy-blog-content-publish
+install -o root -g root -m 0755 "${AI_PUBLISH_SCRIPT}" \
+    /usr/local/sbin/deploy-blog-ai-publish
 install -o root -g root -m 0755 "${COMMAND_SCRIPT}" \
     /usr/local/sbin/blog-content-deploy-command
 install -d -o root -g root -m 0755 /var/lib/chen-blog-content
@@ -53,6 +59,8 @@ printf 'command="/usr/local/sbin/blog-content-deploy-command",restrict %s %s %s\
 
 printf '%s\n' \
     'blog-deploy ALL=(root) NOPASSWD: /usr/local/sbin/deploy-blog-content *' \
+    'blog-deploy ALL=(root) NOPASSWD: /usr/local/sbin/deploy-blog-content-publish *' \
+    'blog-deploy ALL=(root) NOPASSWD: /usr/local/sbin/deploy-blog-ai-publish *' \
     >/etc/sudoers.d/blog-content-deploy
 chmod 0440 /etc/sudoers.d/blog-content-deploy
 visudo -cf /etc/sudoers.d/blog-content-deploy >/dev/null

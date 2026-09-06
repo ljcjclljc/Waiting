@@ -75,8 +75,8 @@ inline std::string pageHeader(const Json::Value &site,
     output
            << "<link rel=\"alternate\" type=\"application/rss+xml\" title=\"RSS\" href=\"/feed.xml\">"
            << "<link rel=\"icon\" href=\"/images/avatar-rossi.jpg\" type=\"image/jpeg\">"
-           << "<link rel=\"stylesheet\" href=\"/css/app.css?v=20260725-1\">"
-           << "<script src=\"/js/app.js?v=20260725-1\" defer></script></head>"
+           << "<link rel=\"stylesheet\" href=\"/css/app.css?v=20260906-8\">"
+           << "<script src=\"/js/app.js?v=20260906-8\" defer></script></head>"
            << "<body data-surface=\"site\" data-page=\"" << (meta.home ? "home" : "inner") << "\">";
     if (meta.home)
         output << "<div class=\"site-background\" aria-hidden=\"true\"><video autoplay muted loop playsinline preload=\"auto\" poster=\"/images/kayoko-rain.jpg\" tabindex=\"-1\"><source src=\"/media/kayoko-rain.mp4\" type=\"video/mp4\"></video><div class=\"site-background-shade\"></div></div>";
@@ -87,7 +87,8 @@ inline std::string pageHeader(const Json::Value &site,
            << "<button class=\"nav-toggle icon-button\" type=\"button\" aria-label=\"打开导航\" aria-expanded=\"false\">"
            << "<svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M4 7h16M4 12h16M4 17h16\"/></svg></button>"
            << "<nav class=\"main-nav\" aria-label=\"主导航\">"
-           << "<a href=\"/#topics\">主题</a><a href=\"/posts\">文章</a><a href=\"/archives\">归档</a>"
+           << "<a href=\"/#topics\">主题</a><a href=\"/posts\">文章</a>"
+           << "<a href=\"/cpp-daily\">每日一题</a><a href=\"/chat\">问答</a><a href=\"/archives\">归档</a>"
            << "<a href=\"/search\">搜索</a><a href=\"/feed.xml\">RSS</a>";
     if (!repositoryUrl.empty())
         output << "<a href=\"" << html::escape(repositoryUrl)
@@ -117,7 +118,7 @@ inline std::string pageFooter(const Json::Value &site)
     output << "<footer class=\"site-footer\"><div class=\"shell footer-inner\"><div class=\"footer-brand\"><img class=\"footer-avatar\" src=\"/images/avatar-rossi.jpg\" alt=\"\" width=\"48\" height=\"48\" loading=\"lazy\" decoding=\"async\"><div>"
            << "<strong>" << html::escape(site.get("name", "Blog").asString())
            << "</strong><p>" << html::escape(site.get("description", "").asString())
-           << "</p></div></div><div class=\"footer-links\"><a href=\"/archives\">归档</a><a href=\"/feed.xml\">RSS</a>"
+           << "</p></div></div><div class=\"footer-links\"><a href=\"/cpp-daily\">每日一题</a><a href=\"/chat\">问答</a><a href=\"/archives\">归档</a><a href=\"/feed.xml\">RSS</a>"
            << "<a href=\"/sitemap.xml\">站点地图</a>";
     if (!repositoryUrl.empty())
         output << "<a href=\"" << html::escape(repositoryUrl)

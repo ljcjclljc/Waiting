@@ -19,6 +19,7 @@ class ContentRepository
                               const std::string &categorySlug = {},
                               const std::string &tagSlug = {}) const;
     Json::Value findPublishedBySlug(const std::string &slug) const;
+    Json::Value dailyQuestionForToday() const;
     Json::Value listAllPublished() const;
     Json::Value listArchive() const;
     Json::Value navigationForSlug(const std::string &slug) const;

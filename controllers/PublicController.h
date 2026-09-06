@@ -11,6 +11,9 @@ class PublicController : public drogon::HttpController<PublicController>
     ADD_METHOD_TO(PublicController::home, "/", drogon::Get);
     ADD_METHOD_TO(PublicController::posts, "/posts", drogon::Get);
     ADD_METHOD_TO(PublicController::archives, "/archives", drogon::Get);
+    ADD_METHOD_TO(PublicController::cppDaily, "/cpp-daily", drogon::Get);
+    ADD_METHOD_TO(PublicController::chatPage, "/chat", drogon::Get);
+    ADD_METHOD_TO(PublicController::chat, "/api/chat", drogon::Post);
     ADD_METHOD_TO(PublicController::article, "/posts/{slug}", drogon::Get);
     ADD_METHOD_TO(PublicController::category,
                   "/categories/{slug}",
@@ -26,6 +29,12 @@ class PublicController : public drogon::HttpController<PublicController>
     drogon::Task<drogon::HttpResponsePtr> home(drogon::HttpRequestPtr request);
     drogon::Task<drogon::HttpResponsePtr> posts(drogon::HttpRequestPtr request);
     drogon::Task<drogon::HttpResponsePtr> archives(
+        drogon::HttpRequestPtr request);
+    drogon::Task<drogon::HttpResponsePtr> cppDaily(
+        drogon::HttpRequestPtr request);
+    drogon::Task<drogon::HttpResponsePtr> chatPage(
+        drogon::HttpRequestPtr request);
+    drogon::Task<drogon::HttpResponsePtr> chat(
         drogon::HttpRequestPtr request);
     drogon::Task<drogon::HttpResponsePtr> article(
         drogon::HttpRequestPtr request,

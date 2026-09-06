@@ -18,6 +18,13 @@
   },
   "custom_config": {
     "content_path": "./content/posts",
+    "ai_chat": {
+      "model": "glm-4.5-air",
+      "api_url": "https://open.bigmodel.cn",
+      "api_path": "/api/paas/v4/chat/completions",
+      "knowledge_path": "./knowledge_base",
+      "prompt_path": "./prompt_optimization"
+    },
     "site": {
       "name": "晨's Blog",
       "description": "用 C++ 记录系统、网络与工程实践",

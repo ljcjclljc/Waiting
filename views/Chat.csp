@@ -1,0 +1,51 @@
+<%inc #include "services/Html.h"
+#include "services/View.h" %>
+<%c++
+const auto site = @@.get<Json::Value>("site");
+blog::view::PageMeta meta;
+meta.title = "问答";
+meta.description = "晨's Blog 技术问答";
+meta.path = "/chat";
+$$ << blog::view::pageHeader(site, meta);
+%>
+<main id="main" class="chat-page">
+  <header class="chat-hero">
+    <div class="shell chat-hero-inner" data-reveal>
+      <span class="section-number">ASK / BLOG ASSISTANT</span>
+      <h1>博客问答</h1>
+      <p>围绕 C++、Linux、网络与工程实践，继续一段具体的讨论。</p>
+    </div>
+  </header>
+  <div class="shell chat-layout">
+    <section class="chat-workspace" aria-label="技术问答">
+      <div class="chat-thread" data-chat-messages role="log" aria-live="polite" aria-label="对话内容">
+        <article class="chat-message chat-message--assistant">
+          <span class="chat-message-label">BLOG ASSISTANT</span>
+          <p>你好，我是晨的博客助手。今天想讨论什么？</p>
+        </article>
+      </div>
+      <form class="chat-form" data-chat-form>
+        <label class="sr-only" for="chat-input">输入问题</label>
+        <textarea id="chat-input" data-chat-input rows="1" maxlength="12000" placeholder="输入一个问题"></textarea>
+        <button class="chat-send" data-chat-send type="submit" aria-label="发送" title="发送">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 4 16 8-16 8 3-8-3-8Zm3 8h13"/></svg>
+        </button>
+        <span class="chat-status" data-chat-status aria-live="polite">就绪</span>
+      </form>
+    </section>
+    <aside class="chat-context" aria-label="助手信息">
+      <div class="chat-context-block">
+        <span class="section-number">01 / ROLE</span>
+        <h2>技术顾问</h2>
+        <p>回答以事实、边界和可执行方案为先，必要时明确资料中的未知部分。</p>
+      </div>
+      <div class="chat-context-block">
+        <span class="section-number">02 / CONTEXT</span>
+        <h2>实时资料</h2>
+        <p>本地知识库与提示词文件会在每次提问时重新读取。</p>
+      </div>
+      <div class="chat-context-mark" aria-hidden="true"><b>Q</b><span>CPP · SYSTEMS · NETWORK</span></div>
+    </aside>
+  </div>
+</main>
+<%c++ $$ << blog::view::pageFooter(site); %>

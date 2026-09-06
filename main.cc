@@ -31,8 +31,12 @@ int main(int argc, char *argv[])
         }
     }
 
-    const std::string configPath =
-        argc > 1 ? argv[1] : "config/config.dev.json";
+    const std::string configPath = argc > 1
+                                       ? argv[1]
+                                       : (std::filesystem::exists(
+                                              "config/config.local.json")
+                                              ? "config/config.local.json"
+                                              : "config/config.dev.json");
 
     if (!std::filesystem::exists(configPath))
     {

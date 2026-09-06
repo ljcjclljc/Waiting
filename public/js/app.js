@@ -110,6 +110,99 @@
     });
   };
 
+  const initializeChat = () => {
+    const form = document.querySelector("[data-chat-form]");
+    const input = form?.querySelector("[data-chat-input]");
+    const messages = document.querySelector("[data-chat-messages]");
+    const status = document.querySelector("[data-chat-status]");
+    const send = form?.querySelector("[data-chat-send]");
+    if (!form || !input || !messages || !status || !send) return;
+
+    const conversation = [];
+    let pending = false;
+
+    const scrollToLatest = () => {
+      messages.scrollTop = messages.scrollHeight;
+    };
+
+    const renderMessage = (role, content, pendingMessage = false) => {
+      const item = document.createElement("article");
+      item.className = `chat-message chat-message--${role}`;
+      if (pendingMessage) item.classList.add("is-pending");
+      const label = document.createElement("span");
+      label.className = "chat-message-label";
+      label.textContent = role === "assistant" ? "BLOG ASSISTANT" : "YOU";
+      const body = document.createElement("p");
+      body.textContent = content;
+      item.append(label, body);
+      messages.append(item);
+      scrollToLatest();
+      return item;
+    };
+
+    const setPending = (value) => {
+      pending = value;
+      send.disabled = value;
+      input.disabled = value;
+      form.setAttribute("aria-busy", String(value));
+    };
+
+    const resize = () => {
+      input.style.height = "auto";
+      input.style.height = `${Math.min(input.scrollHeight, 180)}px`;
+    };
+
+    input.addEventListener("input", resize);
+    input.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" && !event.shiftKey) {
+        event.preventDefault();
+        form.requestSubmit();
+      }
+    });
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const message = input.value.trim();
+      if (!message || pending) return;
+
+      const history = conversation.slice(-8);
+      conversation.push({ role: "user", content: message });
+      renderMessage("user", message);
+      input.value = "";
+      resize();
+      setPending(true);
+      status.textContent = "正在思考";
+      const waiting = renderMessage("assistant", "", true);
+
+      try {
+        const response = await fetch("/api/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Accept: "application/json" },
+          body: JSON.stringify({ message, history }),
+        });
+        const body = await response.json().catch(() => ({}));
+        if (!response.ok || !body.ok || typeof body.answer !== "string") {
+          throw new Error(body.message || "暂时无法完成这次回答。");
+        }
+        waiting.classList.remove("is-pending");
+        waiting.querySelector("p").textContent = body.answer;
+        conversation.push({ role: "assistant", content: body.answer });
+        status.textContent = body.sources ? `已参考 ${body.sources} 份资料` : "回答完成";
+      } catch (error) {
+        waiting.classList.remove("is-pending");
+        waiting.classList.add("is-error");
+        waiting.querySelector("p").textContent = error.message || "暂时无法完成这次回答。";
+        status.textContent = "请求未完成";
+      } finally {
+        setPending(false);
+        input.focus();
+        scrollToLatest();
+      }
+    });
+
+    resize();
+  };
+
   const initializeUi = () => {
     const header = document.querySelector(".site-header");
     const backgroundVideo = document.querySelector(".site-background video");
@@ -125,6 +218,9 @@
         (path === "/" && currentPath === "/") ||
         (path === "/posts" && currentPath.startsWith("/posts")) ||
         (path === "/archives" && currentPath === "/archives") ||
+        (path === "/cpp-daily" &&
+          ["/cpp-daily", "/categories/cpp-daily"].includes(currentPath)) ||
+        (path === "/chat" && currentPath === "/chat") ||
         (path === "/search" && currentPath === "/search") ||
         (path.startsWith("/categories/") && path === currentPath);
       if (active) link.setAttribute("aria-current", "page");
@@ -214,7 +310,7 @@
 
     createToc();
     enhanceCodeBlocks();
-
+    initializeChat();
     if (document.querySelector('script[src="https://giscus.app/client.js"]')) {
       const commentObserver = new MutationObserver(() => {
         const frame = document.querySelector("iframe.giscus-frame");

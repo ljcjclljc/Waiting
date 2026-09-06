@@ -28,3 +28,20 @@
 - `draft: true` 的文件不会显示。
 - 未来日期的文章在日期到达前不会显示。
 - 原始 HTML 会被 Markdown 渲染器禁用。
+
+## C++ 每日一题
+
+每日一题栏目地址为 `/cpp-daily`，文章使用分类 `cpp-daily`，仍然放在 `content/posts` 中。例如：
+
+```json
+"category": { "name": "C++每日一题", "slug": "cpp-daily" }
+```
+
+如果希望从单独的文件夹批量发布每日一题，可以运行：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File deploy/publish-cpp-daily.ps1 `
+  -SourceDirectory C:\path\to\cpp-daily
+```
+
+脚本会保留服务器上的其他文章，只覆盖同 slug 的每日一题文件，并在发送前检查 JSON Front Matter、文件名和分类。

@@ -44,11 +44,20 @@ docker compose up --build -d
 
 ## 发布文章
 
-1. 在 `content/posts` 新建 `<slug>.md`，格式见 `content/README.md`。
+1. 在 `content/posts` 新建 `<slug>.md`，格式见 `content/README.md`；C++ 每日一题使用 `cpp-daily` 分类。
 2. 本地启动博客并检查文章、分类、标签和代码块。
 3. 提交并推送：`git add content/posts && git commit && git push`。
 4. `.github/workflows/publish.yml` 会验证 Docker 构建，并在 `main` 分支推送时发布到 `ghcr.io/<owner>/<repo>`。
 5. 部署主机从 GHCR 拉取新镜像并重启后，文章才会显示。
+
+每日一题也可以从独立目录直接发布到对端服务器：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File deploy/publish-cpp-daily.ps1 `
+  -SourceDirectory C:\path\to\cpp-daily
+```
+
+脚本只接受 `cpp-daily` 分类文章，并通过受限 SSH 将内容发送到服务器；不会上传普通文章目录或执行普通文章发布。
 
 ## 绑定 GitHub 与 Giscus
 

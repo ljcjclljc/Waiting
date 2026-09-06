@@ -5,6 +5,7 @@ const auto site = @@.get<Json::Value>("site");
 const auto posts = @@.get<Json::Value>("posts");
 const auto categories = @@.get<Json::Value>("categories");
 const auto tags = @@.get<Json::Value>("tags");
+const auto dailyQuestion = @@.get<Json::Value>("dailyQuestion");
 const auto &items = posts["items"];
 const auto repositoryUrl = site["github"].get("repository_url", "").asString();
 blog::view::PageMeta meta;
@@ -24,35 +25,41 @@ $$ << blog::view::pageHeader(site, meta);
           <%c++ if (!repositoryUrl.empty()) { %><a class="button hero-repo" href="<%c++ $$ << blog::html::escape(repositoryUrl); %>" target="_blank" rel="noopener noreferrer">GitHub 源码 <span aria-hidden="true">↗</span></a><%c++ } %>
         </div>
       </div>
-      <a class="scroll-cue" href="#featured" aria-label="继续阅读">
+      <a class="scroll-cue" href="#daily-question" aria-label="查看今日每日一题">
         <span>继续阅读</span><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3v13m-5-5 5 5 5-5"/></svg>
       </a>
     </div>
   </section>
 
-  <%c++ if (!items.empty()) { const auto &featured = items[0]; %>
-  <section id="featured" class="featured-band">
+  <section id="daily-question" class="featured-band daily-question-band">
     <div class="shell featured-layout">
-      <div class="section-label" data-reveal><span>01</span><p>FEATURED<br>DISPATCH</p></div>
+      <div class="section-label" data-reveal><span>01</span><p>C++ DAILY<br>TODAY</p></div>
+      <%c++ if (!dailyQuestion.isNull() && !dailyQuestion.empty()) { %>
       <article class="featured-copy" data-reveal>
-        <div class="post-meta"><a href="/categories/<%c++ $$ << blog::html::attr(featured["categorySlug"]); %>"><%c++ $$ << blog::html::text(featured["categoryName"]); %></a><span><%c++ $$ << blog::html::text(featured["publishedAt"]); %></span><span><%c++ $$ << featured["readingMinutes"].asInt64(); %> 分钟</span></div>
-        <h2><a href="/posts/<%c++ $$ << blog::html::attr(featured["slug"]); %>"><%c++ $$ << blog::html::text(featured["title"]); %></a></h2>
-        <p><%c++ $$ << blog::html::text(featured["excerpt"]); %></p>
-        <a class="text-link text-link--inverse" href="/posts/<%c++ $$ << blog::html::attr(featured["slug"]); %>">打开这篇记录 <span aria-hidden="true">↗</span></a>
+        <div class="post-meta"><a href="/cpp-daily"><%c++ $$ << blog::html::text(dailyQuestion["categoryName"]); %></a><span><%c++ $$ << blog::html::text(dailyQuestion["publishedAt"]); %></span><span><%c++ $$ << dailyQuestion["readingMinutes"].asInt64(); %> 分钟</span></div>
+        <h2><a href="/posts/<%c++ $$ << blog::html::attr(dailyQuestion["slug"]); %>"><%c++ $$ << blog::html::text(dailyQuestion["title"]); %></a></h2>
+        <p><%c++ $$ << blog::html::text(dailyQuestion["excerpt"]); %></p>
+        <a class="text-link text-link--inverse" href="/posts/<%c++ $$ << blog::html::attr(dailyQuestion["slug"]); %>">查看今日问答 <span aria-hidden="true">↗</span></a>
       </article>
+      <%c++ } else { %>
+      <article class="featured-copy" data-reveal>
+        <div class="post-meta"><span>C++每日一题</span><span>等待今日提交</span></div>
+        <h2>今天还没有新的每日一题</h2>
+        <p>提交今天的 `cpp-daily` 文章后，它会自动显示在这里。</p>
+      </article>
+      <%c++ } %>
       <div class="featured-visual" aria-hidden="true" data-reveal>
-        <span>V</span>
-        <div><small>FEATURED NOTE</small><b>CHEN / 001</b><p>DROGON · MARKDOWN · GIT</p></div>
+        <span>Q</span>
+        <div><small>DAILY QUESTION</small><b>CPP / TODAY</b><p>QUESTION · ANSWER · C++</p></div>
       </div>
     </div>
   </section>
-  <%c++ } %>
 
   <section id="latest" class="content-section">
     <div class="shell">
       <div class="section-heading" data-reveal><div><span class="section-number">02 / LOG</span><h2>最近提交</h2><p>按时间展开的构建、调试与运行记录。</p></div><a class="text-link" href="/posts">查看全部 <span aria-hidden="true">↗</span></a></div>
       <div class="post-list">
-        <%c++ for (Json::ArrayIndex i = items.empty() ? 0 : 1; i < items.size(); ++i) { $$ << blog::view::postCard(items[i], true); } %>
+        <%c++ for (const auto &item : items) { $$ << blog::view::postCard(item, true); } %>
       </div>
     </div>
   </section>

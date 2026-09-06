@@ -128,10 +128,10 @@ if [[ -d "${POSTS_DIRECTORY}" ]]; then
     rsync -a "${POSTS_DIRECTORY}/" "${BACKUP_DIRECTORY}/posts/"
 fi
 
+deployment_applied=true
 install -d -m 0755 "${POSTS_DIRECTORY}"
 rsync -a --delete --delay-updates --chmod=D755,F644 \
     "${STAGED_POSTS}/" "${POSTS_DIRECTORY}/"
-deployment_applied=true
 printf '%s\n' "${COMMIT_SHA}" >"${VERSION_FILE}.tmp"
 chmod 0644 "${VERSION_FILE}.tmp"
 mv -f -- "${VERSION_FILE}.tmp" "${VERSION_FILE}"

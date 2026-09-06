@@ -29,6 +29,7 @@ set(BLOG_SOURCES
     controllers/PublicController.cc
     repositories/ContentRepository.cc
     repositories/ContentStore.cc
+    services/AiChatService.cc
     services/MarkdownService.cc
 )
 
