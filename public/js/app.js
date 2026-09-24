@@ -26,13 +26,27 @@
     });
 
     const links = [...toc.querySelectorAll("a")];
+    const keepActiveLinkVisible = (link) => {
+      if (toc.scrollHeight <= toc.clientHeight) return;
+      const tocRect = toc.getBoundingClientRect();
+      const linkRect = link.getBoundingClientRect();
+
+      if (linkRect.top < tocRect.top) {
+        toc.scrollTop += linkRect.top - tocRect.top - 8;
+      } else if (linkRect.bottom > tocRect.bottom) {
+        toc.scrollTop += linkRect.bottom - tocRect.bottom + 8;
+      }
+    };
     const observer = new IntersectionObserver(
       (entries) => {
         const visible = entries.find((entry) => entry.isIntersecting);
         if (!visible) return;
+        const activeHash = `#${visible.target.id}`;
         links.forEach((link) =>
-          link.classList.toggle("is-active", link.hash === `#${visible.target.id}`),
+          link.classList.toggle("is-active", link.hash === activeHash),
         );
+        const activeLink = links.find((link) => link.hash === activeHash);
+        if (activeLink) keepActiveLinkVisible(activeLink);
       },
       { rootMargin: "-18% 0px -70% 0px" },
     );

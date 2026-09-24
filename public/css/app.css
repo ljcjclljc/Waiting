@@ -1153,7 +1153,27 @@ body[data-page="home"] .site-header .icon-button:hover {
 
 .article-toc {
   display: grid;
+  max-height: calc(100vh - 160px);
+  max-height: calc(100dvh - 160px);
+  padding-right: 10px;
+  overflow-y: auto;
   border-left: 1px solid var(--line);
+  scrollbar-color: var(--line-strong) transparent;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+}
+
+.article-toc::-webkit-scrollbar {
+  width: 5px;
+}
+
+.article-toc::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.article-toc::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: var(--line-strong);
 }
 
 .article-toc:empty::after {
@@ -1940,6 +1960,13 @@ body[data-page="home"] .site-footer {
     margin-bottom: 44px;
     padding: 18px 0;
     border-block: 1px solid var(--line);
+  }
+
+  .article-toc {
+    max-height: none;
+    padding-right: 0;
+    overflow: visible;
+    scrollbar-gutter: auto;
   }
 }
 
